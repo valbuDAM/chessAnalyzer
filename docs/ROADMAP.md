@@ -1,15 +1,15 @@
 # Roadmap — Zugzwang
 
-▶ Siguiente tarea: T0.2
+▶ Siguiente tarea: T0.3
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T0.1 · Esqueleto del proyecto (hecha, PR #2 mergeado)
-- **Hecho:** Vite 8 + React 19 + TS estricto, Biome, Vitest + Testing Library, `simple-git-hooks` (pre-commit Biome, commit-msg Conventional con `scripts/commit-msg.ts`), `engines.node >= 24`. Versiones fijadas con `-E`.
-- **Falta (T0.2):** script `npm run e2e` (no existe aún), Playwright + axe, workflow de CI, Dependabot y plantilla de PR. La CI debe correr también `node --test .claude/hooks/` (el `vitest` solo incluye `src/` y `scripts/`).
-- **Decisiones/avisos:** Biome ignora `*.md` y `.claude/settings.json` (este lo edita la usuaria; el auto mode no deja a Claude escribirlo). Node va por type-stripping (`node scripts/commit-msg.ts`), sin build. Opcional pendiente: `"shell": "bash"` en los hooks de settings.
+- **Tarea:** T0.2 · e2e y CI (hecha, PR #4 mergeado)
+- **Hecho:** Playwright (`chromium` + `mobile` Pixel 7; Firefox/WebKit con `E2E_ALL=1`), fixture axe en `tests/e2e/fixtures.ts` (falla con *serious*/*critical*), `.github/workflows/ci.yml` (un job `check`, ~1 min, con caché de npm y de navegadores; `workflow_dispatch` con `all_browsers`), Dependabot mensual agrupado, plantilla de PR. `npm run e2e` hace `vite build` y `vite preview` por sí solo.
+- **Falta (T0.3):** `public/_headers` (COOP/COEP), despliegue en Cloudflare Pages y protección de `main` exigiendo el status `check` (`gh api`, pedir permiso). La usuaria debe marcar `check` como obligatorio si aún no lo hizo.
+- **Decisiones/avisos:** `node --test` necesita glob (`".claude/hooks/*.test.mjs"`), no directorio. Un run se colgó una vez en *Install browsers* (`--with-deps`/apt); si se repite, `timeout-minutes: 3` en ese paso o fijar `ubuntu-24.04`. Las actions v4 avisan de Node 20 deprecado: lo subirá Dependabot. Firefox/WebKit aún sin probar en CI. Biome ignora `*.md` y `.claude/settings.json`.
 
 ## Leyenda
 
@@ -53,7 +53,7 @@
 **Depende de:** T0.0 · **Riesgos:** versiones de Biome/Vite con cambios incompatibles → fijar versiones.
 **Modelo:** sonnet · medium · advisor no
 
-### T0.2 · e2e y CI — `pendiente`
+### T0.2 · e2e y CI — `hecha`
 **Objetivo:** CI en GitHub Actions que bloquea los PR rotos.
 **RF:**
 - Playwright con Chromium y un viewport móvil, y `@axe-core/playwright` integrado en un fixture común.

@@ -1,15 +1,14 @@
 # Roadmap — Zugzwang
 
-▶ Siguiente tarea: T0.3
+▶ Siguiente tarea: T0.4
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T0.2 · e2e y CI (hecha, PR #4 mergeado)
-- **Hecho:** Playwright (`chromium` + `mobile` Pixel 7; Firefox/WebKit con `E2E_ALL=1`), fixture axe en `tests/e2e/fixtures.ts` (falla con *serious*/*critical*), `.github/workflows/ci.yml` (un job `check`, ~1 min, con caché de npm y de navegadores; `workflow_dispatch` con `all_browsers`), Dependabot mensual agrupado, plantilla de PR. `npm run e2e` hace `vite build` y `vite preview` por sí solo.
-- **Falta (T0.3):** `public/_headers` (COOP/COEP), despliegue en Cloudflare Pages y protección de `main` exigiendo el status `check` (`gh api`, pedir permiso). La usuaria debe marcar `check` como obligatorio si aún no lo hizo.
-- **Decisiones/avisos:** `node --test` necesita glob (`".claude/hooks/*.test.mjs"`), no directorio. Un run se colgó una vez en *Install browsers* (`--with-deps`/apt); si se repite, `timeout-minutes: 3` en ese paso o fijar `ubuntu-24.04`. Las actions v4 avisan de Node 20 deprecado: lo subirá Dependabot. Firefox/WebKit aún sin probar en CI. Biome ignora `*.md` y `.claude/settings.json`.
+- **Tarea:** T0.3 · despliegue y protección de `main` (hecha, PR #7 mergeado)
+- **Hecho:** `public/_headers` (COOP/COEP) y las mismas cabeceras en `vite.config.ts` (server/preview); e2e `tests/e2e/isolation.spec.ts`. Despliegue como **Worker con assets estáticos** (no Pages): `wrangler.jsonc`, build `npm run build`, deploy `npx wrangler deploy`, URL `chessanalyzer.bvalbuena06.workers.dev`, previews por PR activadas. `main` protegida vía `gh api`: PR + status `check` (strict), admins incluidos, sin force-push.
+- **Avisos:** COEP `require-corp` bloquea `<img>` cross-origin sin CORP (avatares de chess.com): usar `crossOrigin="anonymous"` o COEP `credentialless`. Cabeceras duplicadas en `_headers` y `vite.config.ts`. El e2e solo comprueba local, no la URL de preview. Firefox/WebKit aún sin probar.
 
 ## Leyenda
 
@@ -69,7 +68,7 @@
 **Depende de:** T0.1 · **Riesgos:** minutos de CI → el repo es público, sin cuota.
 **Modelo:** sonnet · medium · advisor no
 
-### T0.3 · Despliegue y protección de `main` — `pendiente`
+### T0.3 · Despliegue y protección de `main` — `hecha`
 **Objetivo:** Despliegue en Cloudflare Pages con aislamiento cross-origin y `main` protegida.
 **RF:**
 - `public/_headers` con COOP `same-origin` y COEP `require-corp`.
@@ -83,7 +82,7 @@
 **Depende de:** T0.2 · **Riesgos:** necesita acción manual en el panel de Cloudflare.
 **Modelo:** sonnet · low · advisor no · **Skills:** wizard
 
-### T0.4 · i18n — `pendiente`
+### T0.4 · i18n — `en curso`
 **Objetivo:** Que todo texto visible salga de `src/i18n/es.json`.
 **RF:**
 - i18next + react-i18next con claves tipadas: una clave inexistente no compila.

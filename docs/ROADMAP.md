@@ -1,15 +1,15 @@
 # Roadmap — Zugzwang
 
-▶ Siguiente tarea: T0.1
+▶ Siguiente tarea: T0.2
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T0.0 · Metodología
-- **Hecho:** grilling (P1–P28) → ROADMAP y DECISIONS aprobados por la usuaria. CLAUDE.md, AGENTS.md, `.claude/` (settings activado por la usuaria, hooks con tests, subagentes) y LICENSE. `ponytail-review` pasado (hallazgos 1–3 corregidos).
-- **Falta:** identidad de git → commits → crear el repo público `valbuDAM/chessAnalyzer` → PR → merge por la usuaria.
-- **Decisiones/avisos:** el auto mode no deja a Claude escribir `.claude/settings.json`: los cambios en ese archivo los aplica la usuaria. Opcional pendiente: añadir `"shell": "bash"` a los hooks (review, hallazgo 4).
+- **Tarea:** T0.1 · Esqueleto del proyecto (hecha, PR #2 mergeado)
+- **Hecho:** Vite 8 + React 19 + TS estricto, Biome, Vitest + Testing Library, `simple-git-hooks` (pre-commit Biome, commit-msg Conventional con `scripts/commit-msg.ts`), `engines.node >= 24`. Versiones fijadas con `-E`.
+- **Falta (T0.2):** script `npm run e2e` (no existe aún), Playwright + axe, workflow de CI, Dependabot y plantilla de PR. La CI debe correr también `node --test .claude/hooks/` (el `vitest` solo incluye `src/` y `scripts/`).
+- **Decisiones/avisos:** Biome ignora `*.md` y `.claude/settings.json` (este lo edita la usuaria; el auto mode no deja a Claude escribirlo). Node va por type-stripping (`node scripts/commit-msg.ts`), sin build. Opcional pendiente: `"shell": "bash"` en los hooks de settings.
 
 ## Leyenda
 
@@ -31,14 +31,14 @@
 
 ## M0 · Base
 
-### T0.0 · Metodología de trabajo — `en curso`
+### T0.0 · Metodología de trabajo — `hecha`
 **Objetivo:** Dejar listos `CLAUDE.md`, `AGENTS.md`, `docs/`, `.claude/` (settings, hooks, subagentes, statusline) y la licencia GPL-3.0.
 **Aceptación:**
 - Dado un `/clear`, cuando arranca la sesión, entonces el hook muestra la rama y `▶ Siguiente tarea`.
 - Dado un `git push` a `main`, cuando Claude lo intenta, entonces el hook lo bloquea.
 **Depende de:** — · **Modelo:** opusplan · high · advisor no · **Skills:** grilling, writing-for-agents
 
-### T0.1 · Esqueleto del proyecto — `pendiente`
+### T0.1 · Esqueleto del proyecto — `hecha`
 **Objetivo:** Crear el proyecto con Vite + React 19 + TypeScript estricto, con los comandos `dev`, `test`, `lint`, `typecheck`, `build` y `e2e` funcionando.
 **RF:**
 - Biome para lint y formato.

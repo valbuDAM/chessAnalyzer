@@ -1,3 +1,6 @@
+import { useTranslation } from 'react-i18next';
+
 export function App() {
-  return <h1>Zugzwang</h1>;
+  const { t } = useTranslation();
+  return <h1>{t('app.title')}</h1>;
 }

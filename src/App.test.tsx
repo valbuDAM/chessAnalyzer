@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
+import './i18n/index.ts';
 import { App } from './App.tsx';
 
 it('renders the app title', () => {

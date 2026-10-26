@@ -1,10 +1,11 @@
 // Run: node --test .claude/hooks/  — runs the guard against a throwaway repo on each branch.
+
+import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, test } from 'node:test';
-import assert from 'node:assert/strict';
 
 const hook = join(import.meta.dirname, 'guard-git.mjs');
 const repo = mkdtempSync(join(tmpdir(), 'guard-'));

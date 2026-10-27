@@ -6,10 +6,29 @@
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T0.7 · Umbrales de cobertura y Stryker (hecha, PR #19 mergeado). Con ella se cierra M0.
-- **Hecho:** cobertura v8 en `vite.config.ts` (solo `src/domain/**/*.ts`, ramas ≥ 90 % con `perFile`; la CI ya ejecuta `npm test -- --coverage`). `@stryker-mutator/core@10.1.1` + `npm run mutate` con command runner (`npx vitest run src/domain --passWithNoTests`), `break: 80`, `cleanTempDir: always` e `ignorePatterns` (`.claude`, `dist`, `coverage`…). Deny de `Read(./.stryker-tmp/**)`. Ambos umbrales comprobados fallando con un archivo de prueba (25 % ramas, 33 % mutación).
-- **Avisos:** `"tsconfigFile": "none.json"` es a propósito: el rewrite de tsconfig de Stryker peta con TypeScript 7 (`ts.parseConfigFileTextToJson is not a function`); quitarlo cuando Stryker soporte TS 7. Los sandboxes huérfanos de `.stryker-tmp` (copias del repo con junction a `node_modules`) eran lo que colgaba las revisiones con sondas; si reaparecen, quitar los junctions con `rmdir` antes de `rm -rf`. Command runner = sin análisis por test: pasar a `@stryker-mutator/vitest-runner` si `mutate` se vuelve lento. Con `src/domain/` vacío la cobertura pasa sin medir nada. Heredados de T0.5/T0.6: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`; Firefox/WebKit sin probar.
-- **Siguiente:** cierre de M0 (checklist común: `ponytail-audit`, `ponytail-debt`, `npm run mutate`, e2e Firefox/WebKit, revisar `/usage`) y después T1.1 · sonnet · `/effort medium` · advisor no · skill tdd.
+- **Tarea:** M0 cerrado (T0.0–T0.7). T1.1 sin empezar.
+- **⚠ BLOQUEANTE ABIERTO: el check `Workers Builds: chessanalyzer` de Cloudflare falla en TODOS los PR (#17–#21) y nunca ha pasado en verde.** Consecuencias:
+  - No hay URL de preview por PR, así que no se puede revisar la UI como pide el flujo (paso 9 de `CLAUDE.md`).
+  - El criterio de T0.3 (`crossOriginIsolated === true` en un e2e contra la preview) **no se cumple en realidad**.
+  - **Plazo:** tiene que pasar en verde **antes de cerrar T1.2**, la primera pantalla que hay que revisar en preview. Si se puede, que pase antes.
+  - Lo que se sabe:
+    - Es un proyecto de **Workers** con assets estáticos (`wrangler.jsonc`: `dist`, fallback SPA), no de Pages como dice ADR-010.
+    - La rama sin mergear `origin/chore/t0-3-previews` probó un bloque `"previews": {}` sin éxito.
+    - La causa sigue sin conocerse: el log solo se ve en el panel de Cloudflare (enlace en `gh pr checks <n>`).
+  - **Primer paso:** que la usuaria pegue el log del build fallido y diagnosticar con `diagnosing-bugs`. Cosas a mirar: comando de build/deploy del panel, versión de Node, `prepare: simple-git-hooks` sin `.git`, TypeScript 7 en `npm run build`.
+- **Cierre de M0:**
+  - `/usage` al 22 %.
+  - `npm run mutate` en verde, aunque vacío (score NaN, no hay dominio).
+  - `ponytail-debt`: no hay ningún marcador `shortcut:`.
+  - e2e Chromium, móvil, Firefox y WebKit en verde: run manual `all_browsers` 40480713028 sobre `main`.
+  - `ponytail-audit`: dos hallazgos. Corregido el guard de git, que bloqueaba rutas con «commit»/«push» (PR #21). Aceptado para T1.3: `Board` recrea chessground en cada cambio de `fen`; hay que crearlo una vez y usar `api.set({ fen })`.
+- **Avisos:**
+  - `stryker.config.json` lleva `"tsconfigFile": "none.json"` a propósito: el rewrite de tsconfig de Stryker peta con TypeScript 7. Quitarlo cuando Stryker soporte TS 7.
+  - Si reaparecen sandboxes en `.stryker-tmp`, quitar primero los junctions con `rmdir` y después `rm -rf`.
+  - Pasar a `@stryker-mutator/vitest-runner` si `mutate` se vuelve lento.
+  - Con `src/domain/` vacío, la cobertura pasa sin medir nada; T1.1 será el primer código que la active.
+  - Heredados: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`.
+- **Siguiente:** T1.1 · sonnet · `/effort medium` · advisor no · skill tdd. Hay que arreglar Cloudflare (arriba) antes de cerrar T1.2.
 
 ## Leyenda
 
@@ -81,6 +100,7 @@
 - Dado un push directo a `main`, cuando lo intento, entonces GitHub lo rechaza.
 **Tests:** E de `crossOriginIsolated` (en local con `vite preview` configurado con las mismas cabeceras).
 **Depende de:** T0.2 · **Riesgos:** necesita acción manual en el panel de Cloudflare.
+**⚠ Pendiente:** el build de Cloudflare (`Workers Builds`) falla en todos los PR, así que no hay preview y el e2e contra la preview no se cumple. Ver las notas de traspaso; hay que arreglarlo antes de cerrar T1.2.
 **Modelo:** sonnet · low · advisor no · **Skills:** wizard
 
 ### T0.4 · i18n — `hecha`

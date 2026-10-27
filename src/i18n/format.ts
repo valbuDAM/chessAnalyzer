@@ -16,6 +16,10 @@ export const formatPercent = (ratio: number, digits = 1) =>
 export const formatDate = (date: Date | number) =>
   new Intl.DateTimeFormat(LOCALE, { dateStyle: 'medium' }).format(date);
 
+/** «marzo de 2024»; UTC because archive months are UTC. */
+export const formatMonth = (date: Date | number) =>
+  new Intl.DateTimeFormat(LOCALE, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date);
+
 /** «+0,3», «−1,3», «#3», «-#2», «1-0»; always from white's point of view. */
 export function formatEval(score: WhiteScore): string {
   if (score.kind === 'cp') {

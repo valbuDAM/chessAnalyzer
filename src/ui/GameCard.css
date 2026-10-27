@@ -1,0 +1,95 @@
+/* A tournament crosstable row: the score from the user's side carries the result, the inlay repeats it in colour. */
+.game-card {
+  display: grid;
+  grid-template-columns: var(--space-8) 1fr auto;
+  grid-template-areas:
+    "score opponent date"
+    "score meta meta";
+  column-gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-3);
+  border-inline-start: var(--space-1) solid var(--game-card-inlay);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.game-card:hover {
+  background: var(--color-raised);
+}
+
+.game-card[data-result="win"] {
+  --game-card-inlay: var(--color-label-best);
+}
+
+.game-card[data-result="loss"] {
+  --game-card-inlay: var(--color-label-mistake);
+}
+
+.game-card[data-result="draw"] {
+  --game-card-inlay: var(--color-text-muted);
+}
+
+.game-card-score {
+  grid-area: score;
+  display: grid;
+  justify-items: center;
+  align-self: center;
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  line-height: var(--leading-tight);
+}
+
+.game-card-result {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.game-card-opponent {
+  grid-area: opponent;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--text-md);
+}
+
+.game-card-opponent > span,
+.game-card-date,
+.game-card-meta {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.game-card-meta {
+  grid-area: meta;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  column-gap: var(--space-1);
+  font-size: var(--text-sm);
+}
+
+.game-card-date {
+  grid-area: date;
+  font-size: var(--text-sm);
+  text-align: end;
+}
+
+/* The piece colour the user played: a tiny square of the board's white or black. */
+.game-card-chip {
+  inline-size: var(--space-3);
+  block-size: var(--space-3);
+  margin-inline-end: var(--space-1);
+  border: var(--border-inlay) solid var(--color-text-muted);
+  border-radius: var(--radius-sm);
+}
+
+.game-card-chip[data-color="white"] {
+  background: var(--color-eval-white);
+}
+
+.game-card-chip[data-color="black"] {
+  background: var(--color-eval-black);
+}

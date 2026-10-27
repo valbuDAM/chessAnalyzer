@@ -1,14 +1,23 @@
 import { useTranslation } from 'react-i18next';
 import './EvalBar.css';
 
-/** `whitePercent` in 0..100 (white's share of the bar); `text` is the formatted evaluation. */
-export function EvalBar({ whitePercent, text }: { whitePercent: number; text: string }) {
+/** `whitePercent` in 0..100 (white's share of the bar); `text` is the formatted evaluation; `orientation` is the side at the bottom. */
+export function EvalBar({
+  whitePercent,
+  text,
+  orientation = 'white',
+}: {
+  whitePercent: number;
+  text: string;
+  orientation?: 'white' | 'black';
+}) {
   const { t } = useTranslation();
   const whiteAhead = whitePercent >= 50;
   return (
     // biome-ignore lint/a11y/useSemanticElements: a native <meter> cannot hold the custom fill and evaluation text.
     <div
       className="eval-bar"
+      data-orientation={orientation}
       role="meter"
       aria-label={t('evalBar.label')}
       aria-valuemin={0}

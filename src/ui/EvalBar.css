@@ -35,3 +35,15 @@
   inset-block-start: 0;
   color: var(--color-eval-white);
 }
+
+/* Black at the bottom: white's share grows from the top and the text follows each side. */
+.eval-bar[data-orientation="black"] .eval-bar__white,
+.eval-bar[data-orientation="black"] .eval-bar__text[data-side="white"] {
+  inset-block-start: 0;
+  inset-block-end: auto;
+}
+
+.eval-bar[data-orientation="black"] .eval-bar__text[data-side="black"] {
+  inset-block-start: auto;
+  inset-block-end: 0;
+}

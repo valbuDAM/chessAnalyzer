@@ -20,11 +20,12 @@ test.beforeEach(async ({ page }) => {
   await page.route('https://api.chess.com/pub/player/ana/games/2024/**', (r) => r.fulfill({ json: { games: [game] } }));
 });
 
-test('user → last game → analysis with the real engine', async ({ page, expectNoSeriousA11yViolations }) => {
+test('user → list → game → analysis with the real engine', async ({ page, expectNoSeriousA11yViolations }) => {
   await page.goto('/');
   await page.getByLabel('Usuario de chess.com').fill('ana');
-  await page.getByRole('button', { name: 'Ver última partida' }).click();
-  await expect(page.getByText('luis')).toBeVisible();
+  await page.getByRole('button', { name: 'Ver partidas' }).click();
+  await page.getByRole('link', { name: /luis/ }).click();
+  await expect(page.getByRole('heading', { name: 'ana contra luis' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Analizar' }).click();
 

@@ -5,16 +5,33 @@
   "home": {
     "lead": "Analiza tus partidas de chess.com con Stockfish, sin salir del navegador.",
     "userLabel": "Usuario de chess.com",
-    "submit": "Ver última partida"
+    "submit": "Ver partidas"
   },
   "user": {
     "back": "Cambiar de usuario",
-    "loading": "Buscando su última partida…",
+    "loading": "Cargando sus partidas…",
     "empty": "Este usuario no tiene partidas.",
-    "lastGame": "Última partida",
+    "monthEmpty": "Ninguna partida nueva este mes.",
+    "monthUnavailable": "chess.com no puede servir este mes ahora mismo. Puedes seguir con los anteriores.",
+    "loadMore": "Cargar mes anterior",
+    "loadingMore": "Cargando mes anterior…",
     "white": "Blancas",
     "black": "Negras",
     "result": "Resultado"
+  },
+  "card": {
+    "score": { "win": "1", "loss": "0", "draw": "½" },
+    "result": { "win": "Victoria", "loss": "Derrota", "draw": "Tablas" },
+    "color": { "white": "con blancas", "black": "con negras" },
+    "timeClass": { "bullet": "Bullet", "blitz": "Blitz", "rapid": "Rápida", "daily": "Diaria" },
+    "moves_one": "{{count}} jugada",
+    "moves_other": "{{count}} jugadas"
+  },
+  "gamePage": {
+    "title": "{{white}} contra {{black}}",
+    "loading": "Buscando la partida…",
+    "notFound": "No hay ninguna partida con ese enlace entre las de este usuario.",
+    "back": "Volver a sus partidas"
   },
   "error": {
     "notFound": "No existe ese usuario en chess.com.",

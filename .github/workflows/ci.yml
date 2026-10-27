@@ -41,6 +41,8 @@ jobs:
         run: node --test ".claude/hooks/*.test.mjs"
       - name: Build
         run: npm run build
+      - name: Lighthouse CI (score + budget)
+        run: npx lhci autorun
       - name: Get Playwright version
         id: pw
         run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"

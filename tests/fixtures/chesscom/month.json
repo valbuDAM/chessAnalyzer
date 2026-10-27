@@ -1,0 +1,25 @@
+{
+  "games": [
+    {
+      "url": "https://www.chess.com/game/live/100000001",
+      "pgn": "[Event \"Live Chess\"]\n[White \"hikaru\"]\n[Black \"magnus\"]\n[Result \"1-0\"]\n\n1. e4 e5 2. Nf3 Nc6 1-0",
+      "time_control": "180",
+      "time_class": "blitz",
+      "rules": "chess",
+      "rated": true,
+      "end_time": 1709300000,
+      "white": { "username": "Hikaru", "rating": 3200, "result": "win" },
+      "black": { "username": "MagnusCarlsen", "rating": 3190, "result": "resigned" }
+    },
+    {
+      "url": "https://www.chess.com/game/live/100000002",
+      "time_control": "60",
+      "time_class": "bullet",
+      "rules": "chess",
+      "rated": false,
+      "end_time": 1709300500,
+      "white": { "username": "magnus", "rating": 3100, "result": "checkmated" },
+      "black": { "username": "hikaru", "rating": 3210, "result": "win" }
+    }
+  ]
+}

@@ -1,12 +1,21 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T2.3
+▶ Siguiente tarea: T2.4
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T2.2 cerrada (PR #37). T2.3 sin empezar.
+- **Tarea:** T2.3 cerrada (PR #39). T2.4 sin empezar.
+- **Entregado en T2.3:**
+  - `/u/:user` (`UserPage`, con `key={user}`) es la lista: carga el mes más reciente y «Cargar mes anterior» añade el siguiente hacia atrás. Lleva el foco al encabezado del mes nuevo y guarda la cuenta en `?months=N` (`history.replaceState`), que se relee al entrar. La tarjeta lleva el mismo `?months` en su enlace y `GamePage` lo devuelve en «Volver a sus partidas».
+  - `src/domain/games.ts` (puro): `gameId` (último segmento de la URL), `moveCount` (regex sobre el PGN; `shortcut:` con variantes), `playerView` (color, rival y resultado desde el usuario, sin distinguir mayúsculas), `monthStart` (UTC desde `…/YYYY/MM`) y `addMonth` (más nueva primero, sin repetir `url` de meses anteriores). `formatMonth` en `src/i18n/format.ts`.
+  - `GameCard`: un `<Link>` por tarjeta. Puntuación 1 · ½ · 0 en Young Serif con la palabra debajo, filete izquierdo por resultado (`--color-label-best` / `-mistake` / `--color-text-muted`), rival y Elo, ritmo, color con una ficha de color, jugadas y fecha. Lleva espacios explícitos entre las partes para que el nombre accesible se lea bien.
+  - `/u/:user/:gameId` (`GamePage`): `findGame(user, id)` (sustituye a `getLastGame`) busca mes a mes desde el más reciente. Cabecera «X contra Y» y `GameViewer` con `orientation` = color del usuario, que pasa a `Board` (chessground `orientation`) y a `EvalBar` (`data-orientation`; el número sigue desde blancas).
+  - **Mes no disponible:** `getMonthGames` devuelve `null`, sin guardarlo en caché, si chess.com responde 404 a un mes que sí lista (pasa con el mes en curso de `hikaru`, que es enorme). La lista lo marca y deja seguir. `Month.games` es `Game[] | null`.
+  - **Rendimiento** (Chromium headless, 500 tarjetas sintéticas): 383 ms de tarea larga al pintar, que bajan a 204 ms con `content-visibility: auto` en `.month-games > li`. Al desplazar, 18 ms por frame. Sin virtualización. Un usuario real (danielnaroditsky) tiene 935 partidas en un mes.
+  - La home dice «Ver partidas». `.page a` pasa a `.page > a` para que las tarjetas no hereden el latón.
+- **Límites de T2.3:** un error de red al cargar los N meses iniciales tumba toda la página (el reintento recarga todo). Un enlace directo a una partida de un mes con 404 dice «no hay ninguna partida» en vez de «no disponible». No se ha comprobado con axe el tema claro de las tarjetas, ni la barra girada en un navegador real (solo su CSS). Un solo PR de 428 líneas, unas 150 de CSS, aceptado por la usuaria.
 - **Entregado en T2.2:**
   - `getMonthGames(url)` en `src/domain/chesscom.ts` guarda el `Game[]` ya validado de los meses cerrados en IndexedDB (`idb-keyval`, clave `games:v1:<url>`) y lo devuelve sin red la siguiente vez. Un mes está cerrado cuando han pasado 24 h desde el inicio del mes siguiente en UTC, para dar margen a las partidas indexadas tarde. El mes en curso no cambia: lo cubre la caché HTTP del navegador (ADR).
   - Si IndexedDB falla al leer o escribir (cuota llena, bloqueado, no disponible), el error se ignora y se descarga. La lectura de la caché va fuera de la cola en serie.
@@ -56,7 +65,7 @@
   - Si reaparecen sandboxes en `.stryker-tmp`, quitar primero los junctions con `rmdir` y después `rm -rf`.
   - Pasar a `@stryker-mutator/vitest-runner` si `mutate` se vuelve lento.
     - T1.1 ya activa la cobertura de `src/domain/` (`chesscom.ts` 93,5 % ramas). Cliente: `getArchives` y `getMonthGames`, cola en serie; fixtures escritos a mano, no respuestas reales.  - Heredados: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`.
-- **Siguiente:** T2.3 · `/model sonnet`, `/advisor off`, `/effort medium`. Es UX nueva: skill `grilling` (tarjeta, «Cargar mes anterior», teclado) antes de tocar código, y después `frontend-design`. Reutiliza `getArchives` + `getMonthGames`, que ya trae la caché.
+- **Siguiente:** T2.4 · `/model sonnet`, `/advisor off`, `/effort low`. Los filtros van en la query string junto a `?months=N`: la tarjeta ya pasa su `search` al enlace de la partida, así que hay que llevar ahí todos los parámetros, no solo `months`. Filtrar sobre `UserPage` (`state.months`) con una función pura en `src/domain/games.ts` (`playerView` ya da color y resultado). Decidir en grilling qué hace el filtro de mes con los meses aún sin cargar.
 
 ## Leyenda
 
@@ -284,7 +293,7 @@
 **Depende de:** T2.1 · **Riesgos:** cuota de IndexedDB llena → atrapar `QuotaExceededError` y seguir sin caché.
 **Modelo:** sonnet · medium · advisor no · **Skills:** tdd
 
-### T2.3 · Lista de partidas por meses — `pendiente`
+### T2.3 · Lista de partidas por meses — `hecha` (PR #39)
 **Objetivo:** Explorar el historial completo.
 **RF:**
 - Lista del mes más reciente, con «Cargar mes anterior».

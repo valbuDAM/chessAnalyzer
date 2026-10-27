@@ -38,4 +38,13 @@ test('on main with history', () => {
   assert.equal(blocked('git commit -m "feat: x"'), true);
   assert.equal(blocked('git push origin feat/x'), true);
   assert.equal(blocked('git pull'), false);
+  assert.equal(blocked('git -c user.name=x commit -m y'), true);
+  assert.equal(blocked('git status && git commit -m y'), true);
+});
+
+test('words in paths or arguments are not git subcommands', () => {
+  git('switch', '-q', 'main');
+  assert.equal(blocked('cat .claude/hooks/guard-git.mjs scripts/commit-msg.ts'), false);
+  assert.equal(blocked('grep -rn push .claude/hooks/guard-git.mjs'), false);
+  assert.equal(blocked('git log --grep commit'), false);
 });

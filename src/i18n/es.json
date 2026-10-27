@@ -10,12 +10,20 @@
   "user": {
     "back": "Cambiar de usuario",
     "loading": "Buscando su última partida…",
-    "error": "No se pudo cargar la partida. Comprueba el nombre de usuario e inténtalo de nuevo.",
     "empty": "Este usuario no tiene partidas.",
     "lastGame": "Última partida",
     "white": "Blancas",
     "black": "Negras",
     "result": "Resultado"
+  },
+  "error": {
+    "notFound": "No existe ese usuario en chess.com.",
+    "rateLimit": "chess.com recibe demasiadas peticiones. Espera un momento e inténtalo de nuevo.",
+    "offline": "Sin conexión. Comprueba tu red e inténtalo de nuevo.",
+    "timeout": "chess.com tardó demasiado en responder.",
+    "http": "No se pudo contactar con chess.com. Inténtalo de nuevo.",
+    "shape": "chess.com devolvió datos inesperados.",
+    "retry": "Reintentar"
   },
   "game": {
     "title": "Repetición de la partida",

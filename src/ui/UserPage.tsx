@@ -3,33 +3,40 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'wouter';
 import { type Game, getLastGame, outcome } from '../domain/chesscom.ts';
 import { formatDate, formatNumber } from '../i18n/format.ts';
+import { ApiError } from './ApiError.tsx';
 import { GameViewer } from './GameViewer.tsx';
 import './Home.css';
 
-type State = { status: 'loading' } | { status: 'error' } | { status: 'empty' } | { status: 'ready'; game: Game };
+type State =
+  | { status: 'loading' }
+  | { status: 'error'; error: unknown }
+  | { status: 'empty' }
+  | { status: 'ready'; game: Game };
 
 export function UserPage({ user }: { user: string }) {
   const { t } = useTranslation();
   const [state, setState] = useState<State>({ status: 'loading' });
+  const [attempt, setAttempt] = useState(0);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: attempt only re-runs the load on retry
   useEffect(() => {
     let current = true;
     setState({ status: 'loading' });
     getLastGame(user).then(
       (game) => current && setState(game ? { status: 'ready', game } : { status: 'empty' }),
-      () => current && setState({ status: 'error' }),
+      (error) => current && setState({ status: 'error', error }),
     );
     return () => {
       current = false;
     };
-  }, [user]);
+  }, [user, attempt]);
 
   return (
     <main className="page">
       <h1>{user}</h1>
       <Link href="/">{t('user.back')}</Link>
       {state.status === 'loading' && <p role="status">{t('user.loading')}</p>}
-      {state.status === 'error' && <p role="alert">{t('user.error')}</p>}
+      {state.status === 'error' && <ApiError error={state.error} onRetry={() => setAttempt((n) => n + 1)} />}
       {state.status === 'empty' && <p role="status">{t('user.empty')}</p>}
       {state.status === 'ready' && <LastGame game={state.game} />}
     </main>

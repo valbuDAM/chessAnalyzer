@@ -3,6 +3,8 @@ import month from '../fixtures/chesscom/month.json' with { type: 'json' };
 import { expect, test } from './fixtures';
 
 test.beforeEach(async ({ page }) => {
+  await page.route('https://api.chess.com/pub/player/hikaru', (r) => r.fulfill({ json: { username: 'hikaru' } }));
+  await page.route('https://api.chess.com/pub/player/usuario_que_no_existe_123', (r) => r.fulfill({ status: 404 }));
   await page.route('https://api.chess.com/pub/player/hikaru/games/archives', (r) => r.fulfill({ json: archives }));
   await page.route('https://api.chess.com/pub/player/hikaru/games/2024/**', (r) => r.fulfill({ json: month }));
 });
@@ -19,6 +21,16 @@ test('submitting a user shows their last game', async ({ page, expectNoSeriousA1
   await page.getByRole('button', { name: 'Ver última partida' }).click();
   await expect(page).toHaveURL('/u/hikaru');
   await expect(page.getByText('MagnusCarlsen')).toBeVisible();
+  await expectNoSeriousA11yViolations();
+});
+
+test('an unknown user shows an error and keeps the typed text', async ({ page, expectNoSeriousA11yViolations }) => {
+  await page.goto('/');
+  const input = page.getByLabel('Usuario de chess.com');
+  await input.fill('usuario_que_no_existe_123');
+  await page.getByRole('button', { name: 'Ver última partida' }).click();
+  await expect(page.getByRole('alert')).toHaveText('No existe ese usuario en chess.com.');
+  await expect(input).toHaveValue('usuario_que_no_existe_123');
   await expectNoSeriousA11yViolations();
 });
 

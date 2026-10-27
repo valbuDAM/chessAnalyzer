@@ -1,13 +1,15 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T1.3
+▶ Siguiente tarea: T1.4
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T1.2 cerrada (PR #25). T1.3 sin empezar.
-- **Entregado en T1.2:** wouter con `/` y `/u/:user` (cualquier otra ruta cae en la home); `getLastGame` y `outcome` en `chesscom.ts`; `Home` y `UserPage` en `src/ui/`. Faltan `/u/:user/:gameId` y `/pgn`: se añaden con sus pantallas (T1.3 y la entrada por PGN). Comprobado en local contra chess.com real con COEP: `crossOriginIsolated` true y la partida carga.
+- **Tarea:** T1.3 cerrada (PR #27). T1.4 sin empezar.
+- **Entregado en T1.3:** `parseGamePgn` en `src/domain/pgn.ts` (N+1 posiciones: `fen`, `san`, `uci`, `clock` en segundos; enroque como `e1g1`, y rey-toma-torre si `Variant` es Chess960); `Board` crea chessground una vez y usa `api.set({ fen })`; `GameViewer` (Anterior/Siguiente) va dentro de la última partida de `/u/:user`. Comprobado en local con una partida real de 140 jugadas. Dependencia `chessops` añadida.
+- **Decisiones y límites de T1.3:** no se creó `/u/:user/:gameId` (el visor va en `UserPage`; la ruta hará falta cuando se elijan otras partidas) ni `/pgn` (entrada por PGN). Los relojes se leen pero no se muestran. Sin flechas de teclado. `opacity: 0.5` de los botones deshabilitados no sale de `tokens.css`. El test del visor espera hasta 3 s porque chessground retira la pieza capturada tras su animación.
+- **T1.2:** wouter con `/` y `/u/:user` (cualquier otra ruta cae en la home); `getLastGame` y `outcome` en `chesscom.ts`; `Home` y `UserPage` en `src/ui/`.
 - **⚠ DEUDA ACEPTADA: previews de Cloudflare apagadas.** El interruptor *Builds for Preview branches* está apagado a propósito; los builds de `main` (producción) funcionan.
   - **Causa:** los builds de rama ejecutan `npx wrangler versions upload` (modelo antiguo de previews) y fallan con «The name in your wrangler.jsonc file (chessanalyzer) must match the name of your Worker». Es el bug [cloudflare/workers-sdk#15682](https://github.com/cloudflare/workers-sdk/issues/15682) (`WRANGLER_CI_MATCH_TAG` de las ramas no corresponde a ningún Worker).
   - **Probado sin éxito:** `env -u WRANGLER_CI_MATCH_TAG …` en *Previews Base → Preview command*: ese campo se guarda pero los builds de rama lo ignoran. El panel no ofrece el banner «Set up Worker Previews» ni otro campo de comando para ramas; *Trigger events* no aplica (Worker solo con assets).
@@ -18,7 +20,7 @@
   - `npm run mutate` en verde, aunque vacío (score NaN, no hay dominio).
   - `ponytail-debt`: no hay ningún marcador `shortcut:`.
   - e2e Chromium, móvil, Firefox y WebKit en verde: run manual `all_browsers` 40480713028 sobre `main`.
-  - `ponytail-audit`: dos hallazgos. Corregido el guard de git, que bloqueaba rutas con «commit»/«push» (PR #21). Aceptado para T1.3: `Board` recrea chessground en cada cambio de `fen`; hay que crearlo una vez y usar `api.set({ fen })`.
+  - `ponytail-audit`: dos hallazgos. Corregido el guard de git, que bloqueaba rutas con «commit»/«push» (PR #21). El segundo (`Board` recreaba chessground en cada `fen`) se corrigió en T1.3.
 - **Avisos:**
   - `stryker.config.json` lleva `"tsconfigFile": "none.json"` a propósito: el rewrite de tsconfig de Stryker peta con TypeScript 7. Quitarlo cuando Stryker soporte TS 7.
   - Si reaparecen sandboxes en `.stryker-tmp`, quitar primero los junctions con `rmdir` y después `rm -rf`.
@@ -26,7 +28,7 @@
   - Un fallo de red en la UI se muestra como el error genérico (cualquier excepción); no se distingue 404 de red caída. Mejorar cuando haya mensajes por causa.
   - T1.1 ya activa la cobertura de `src/domain/` (`chesscom.ts` 93,5 % ramas). Cliente: `getArchives` y `getMonthGames`, cola en serie; fixtures escritos a mano, no respuestas reales. Un fallo de red lanza `TypeError`, no `ChessComError`; la UI actual no lo necesita.
   - Heredados: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`.
-- **Siguiente:** T1.3 · sonnet · `/effort medium` · advisor no · skills tdd y frontend-design. Incluye crear chessground una sola vez (ver ponytail-audit).
+- **Siguiente:** T1.4 · su bloque no fija modelo/esfuerzo/advisor. Según CLAUDE.md es diseño de interfaz (skill `codebase-design`, antes `grilling`) y cola del motor: `/model opusplan` + plan mode, luego `/effort high` y `/advisor opus`. Pendiente de que la usuaria lo confirme y lo escriba en el bloque.
 
 ## Leyenda
 
@@ -183,7 +185,7 @@
 **Tests:** C del formulario · E con la API simulada (`page.route` en Playwright).
 **Depende de:** T1.1, T0.5 · **Modelo:** sonnet · medium · advisor no · **Skills:** frontend-design
 
-### T1.3 · PGN → tablero con avance y retroceso — `pendiente`
+### T1.3 · PGN → tablero con avance y retroceso — `hecha`
 **Objetivo:** Reproducir la partida en chessground.
 **RF:**
 - Parser con chessops: lista de posiciones (FEN, SAN, UCI, reloj `[%clk]`).

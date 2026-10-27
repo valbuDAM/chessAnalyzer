@@ -1,0 +1,37 @@
+.eval-bar {
+  position: relative;
+  inline-size: var(--space-5);
+  overflow: hidden;
+  border: var(--border-inlay) solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  background: var(--color-eval-black);
+}
+
+.eval-bar__white {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  background: var(--color-eval-white);
+  transition: block-size var(--duration-slow) var(--ease-out);
+}
+
+.eval-bar__text {
+  position: absolute;
+  inset-inline: 0;
+  text-align: center;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  writing-mode: vertical-rl;
+  padding-block: var(--space-1);
+}
+
+.eval-bar__text[data-side="white"] {
+  inset-block-end: 0;
+  color: var(--color-eval-black);
+}
+
+.eval-bar__text[data-side="black"] {
+  inset-block-start: 0;
+  color: var(--color-eval-white);
+}

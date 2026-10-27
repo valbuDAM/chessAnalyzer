@@ -93,10 +93,10 @@
 **Tests:** U de los helpers de `Intl`.
 **Depende de:** T0.1 · **Modelo:** sonnet · low · advisor no
 
-### T0.5 · Hoja de estilo «club clásico reinventado» — `pendiente`
+### T0.5 · Hoja de estilo «club clásico reinventado» — `en review`
 **Objetivo:** Fijar la identidad visual C y sus tokens, con aprobación de la usuaria.
 **RF:**
-- Una página `/styleguide` (solo en desarrollo) con:
+- Una página `/styleguide` (sin enlazar y con `noindex`) con:
   - paleta (madera oscura, latón, verde fieltro) en modo oscuro y claro;
   - tipografías: una serif con carácter y una de interfaz, servidas desde el propio sitio;
   - escala de espaciado y radios;

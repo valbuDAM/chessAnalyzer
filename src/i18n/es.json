@@ -1,5 +1,43 @@
 {
   "app": {
     "title": "Zugzwang"
+  },
+  "moveLabel": {
+    "brilliant": "Brillante",
+    "great": "Gran jugada",
+    "best": "Mejor",
+    "good": "Buena",
+    "book": "Libro",
+    "inaccuracy": "Imprecisión",
+    "mistake": "Error",
+    "blunder": "Error grave",
+    "miss": "Oportunidad perdida"
+  },
+  "evalBar": {
+    "label": "Ventaja de las blancas"
+  },
+  "styleguide": {
+    "title": "Hoja de estilo",
+    "intro": "Madera oscura, latón y fieltro verde: la identidad de Zugzwang. Cada color, medida y duración de esta página sale de los tokens de diseño.",
+    "lightMode": "Modo claro",
+    "boardLabel": "Rey y peón blancos contra rey negro, con las blancas en oposición",
+    "boardCaption": "Oposición: quien mueve, cede terreno.",
+    "playDemo": "Reproducir animación",
+    "palette": "Paleta",
+    "pairs": "Texto sobre cada fondo",
+    "text": "Texto principal",
+    "textMuted": "Texto secundario",
+    "accent": "Acento de latón",
+    "typography": "Tipografía",
+    "displayFont": "Young Serif, para títulos y cifras grandes",
+    "uiFont": "Atkinson Hyperlegible Next, para la interfaz",
+    "headingSample": "Defensa siciliana, variante Najdorf",
+    "bodySample": "Un zugzwang es una posición en la que cualquier jugada empeora la tuya. Pasar sería lo mejor, pero en ajedrez no se puede pasar.",
+    "numbersSample": "Precisión 92,4 %   Evaluación +1,24   Pérdida −0,37",
+    "spacing": "Espaciado",
+    "radii": "Radios",
+    "motion": "Movimiento",
+    "motionNote": "Con «reducir movimiento» activado en el sistema, todas las duraciones pasan a cero.",
+    "labels": "Etiquetas de jugada"
   }
 }

@@ -1,0 +1,49 @@
+.move-badge {
+  display: inline-grid;
+  place-items: center;
+  inline-size: var(--space-5);
+  block-size: var(--space-5);
+  border-radius: var(--radius-round);
+  background: var(--badge-bg);
+  color: var(--color-on-label);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.move-badge svg {
+  inline-size: 62%;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.move-badge[data-label="brilliant"] {
+  --badge-bg: var(--color-label-brilliant);
+}
+.move-badge[data-label="great"] {
+  --badge-bg: var(--color-label-great);
+}
+.move-badge[data-label="best"] {
+  --badge-bg: var(--color-label-best);
+}
+.move-badge[data-label="good"] {
+  --badge-bg: var(--color-label-good);
+}
+.move-badge[data-label="book"] {
+  --badge-bg: var(--color-label-book);
+}
+.move-badge[data-label="inaccuracy"] {
+  --badge-bg: var(--color-label-inaccuracy);
+}
+.move-badge[data-label="mistake"] {
+  --badge-bg: var(--color-label-mistake);
+}
+.move-badge[data-label="miss"] {
+  --badge-bg: var(--color-label-miss);
+}
+.move-badge[data-label="blunder"] {
+  --badge-bg: var(--color-label-blunder);
+  color: var(--color-on-label-strong);
+}

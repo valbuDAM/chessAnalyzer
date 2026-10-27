@@ -194,3 +194,17 @@ Formato breve: **Contexto · Decisión · Descartado · Consecuencias**. Todas s
 - **Contexto:** el plugin ponytail inyecta sus reglas con su hook `SessionStart` (también tras `/clear` y `/compact`) y en los subagentes (`SubagentStart`).
 - **Decisión:** `AGENTS.md` va en la raíz para otros agentes, pero **no** se importa con `@` en `CLAUDE.md`.
 - **Consecuencias:** no se pagan dos veces los mismos tokens. Si se desinstala el plugin, hay que añadir `@AGENTS.md` a `CLAUDE.md`.
+
+### ADR-024 · Hoja de estilo (T0.5)
+- **Fecha:** 2026-10-27.
+- **Decisión:**
+  - `styleguide.html` como segunda entrada de Vite, incluida en el build, sin enlazar y con `noindex`. Así pasa axe en CI y se revisa en la preview de Cloudflare.
+  - Tipografía: una serif para títulos y cifras y una sans de interfaz, OFL, vía `@fontsource` (subconjunto latino), ≤ 2 pesos de la serif. Nada de Inter, Playfair ni Fraunces.
+  - Piezas merida (Armando Hernández Marroquín, GPLv2+), SVG en el repo y atribuidas.
+  - Tablero en colores planos de los tokens, sin texturas.
+  - Etiquetas: glifos de notación (`!!`, `!`, `?!`, `?`, `??`) y SVG mínimos; paleta propia salvo «brillante», que usa el teal de chess.com (`#26c2a3`) por elección de la usuaria, con glifo oscuro (8:1; el blanco daría 2,3:1); el significado no depende solo del color.
+  - Un solo PR de ~810 líneas de código, como excepción al límite de ~400 (decisión de la usuaria: la página de muestra no se puede revisar por partes).
+  - Tema oscuro en `:root`, claro con `[data-theme="light"]`. Sin persistencia ni preferencia del sistema hasta T6.3.
+  - Contraste verificado con axe en los dos temas; la hoja pinta todas las parejas texto/fondo.
+  - Una sola propuesta real, iterando sobre `tokens.css`.
+- **Descartado:** página solo en dev (no se ve en CI ni en la preview), `wouter` antes de M1, texturas de madera, juegos de piezas CC BY-NC-SA (incompatibles), test unitario de contraste propio.

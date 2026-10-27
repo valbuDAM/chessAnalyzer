@@ -12,15 +12,22 @@ export type Game = {
   black: Side;
 };
 
+export type ErrorKind = 'notFound' | 'rateLimit' | 'offline' | 'timeout' | 'http' | 'shape';
+
 export class ChessComError extends Error {
   override name = 'ChessComError';
   constructor(
     message: string,
+    readonly kind: ErrorKind = 'shape',
     readonly status?: number,
   ) {
     super(message);
   }
 }
+
+const TIMEOUT_MS = 15_000;
+const RETRIES = 3;
+const BACKOFF_MS = 1000;
 
 // Requests run one at a time, as chess.com asks of clients; a failure must not block the queue.
 let tail: Promise<unknown> = Promise.resolve();
@@ -30,12 +37,46 @@ function serial<T>(task: () => Promise<T>): Promise<T> {
   return run;
 }
 
+// The timeout signal also covers the body download, so both fetch() and res.json() can fail this way.
+const transportError = (e: unknown) =>
+  new ChessComError('Request failed', e instanceof DOMException && e.name === 'TimeoutError' ? 'timeout' : 'offline');
+
+async function fetchOk(url: string): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    if (globalThis.navigator?.onLine === false) throw new ChessComError('Browser is offline', 'offline');
+    let res: Response;
+    try {
+      res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    } catch (e) {
+      throw transportError(e);
+    }
+    if (res.ok) return res;
+    if (res.status === 429 && attempt < RETRIES) {
+      await new Promise((resolve) => setTimeout(resolve, BACKOFF_MS * 2 ** attempt));
+      continue;
+    }
+    const kind = res.status === 404 ? 'notFound' : res.status === 429 ? 'rateLimit' : 'http';
+    throw new ChessComError(`chess.com responded ${res.status}`, kind, res.status);
+  }
+}
+
 async function getJson(url: string): Promise<unknown> {
   return serial(async () => {
-    const res = await fetch(url);
-    if (!res.ok) throw new ChessComError(`chess.com responded ${res.status}`, res.status);
-    return res.json(); // read the body inside the slot, or the next request overlaps this download
+    const res = await fetchOk(url);
+    // read the body inside the slot, or the next request overlaps this download
+    return res.json().catch((e) => {
+      throw e instanceof SyntaxError ? new ChessComError('Body is not JSON') : transportError(e);
+    });
   });
+}
+
+/** chess.com usernames are case-insensitive. */
+export const normalizeUser = (user: string) => user.trim().toLowerCase();
+
+/** Resolves if the player exists; otherwise throws a ChessComError (kind notFound for an unknown user). */
+export async function getPlayer(user: string): Promise<void> {
+  const body = await getJson(`${API}${encodeURIComponent(normalizeUser(user))}`);
+  if (!isRecord(body) || typeof body.username !== 'string') throw new ChessComError('Unexpected profile shape');
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
@@ -71,7 +112,7 @@ function parseGame(v: unknown): Game | null {
 
 /** Monthly archive URLs, oldest first (the URLs end in YYYY/MM, so they sort as strings). */
 export async function getArchives(user: string): Promise<string[]> {
-  const body = await getJson(`${API}${encodeURIComponent(user.toLowerCase())}/games/archives`);
+  const body = await getJson(`${API}${encodeURIComponent(normalizeUser(user))}/games/archives`);
   if (!isRecord(body) || !Array.isArray(body.archives) || !body.archives.every((a) => typeof a === 'string')) {
     throw new ChessComError('Unexpected archives shape');
   }

@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { delay, HttpResponse, http } from 'msw';
 import { setupServer } from 'msw/node';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import archives from '../../tests/fixtures/chesscom/archives.json';
 import month from '../../tests/fixtures/chesscom/month.json';
-import { ChessComError, getArchives, getLastGame, getMonthGames, outcome } from './chesscom';
+import { ChessComError, getArchives, getLastGame, getMonthGames, getPlayer, normalizeUser, outcome } from './chesscom';
 
 const API = 'https://api.chess.com/pub/player';
 const server = setupServer();
@@ -29,7 +29,7 @@ describe('getArchives', () => {
 
   it('throws ChessComError with the status on a 404', async () => {
     server.use(http.get(`${API}/nadie/games/archives`, () => new HttpResponse(null, { status: 404 })));
-    await expect(getArchives('nadie')).rejects.toMatchObject({ name: 'ChessComError', status: 404 });
+    await expect(getArchives('nadie')).rejects.toMatchObject({ name: 'ChessComError', kind: 'notFound', status: 404 });
   });
 
   it('rejects a malformed body', async () => {
@@ -101,6 +101,97 @@ describe('serial queue', () => {
     const [a, b] = await Promise.allSettled([getArchives('a'), getArchives('b')]);
     expect(a.status).toBe('rejected');
     expect(b.status).toBe('fulfilled');
+  });
+});
+
+describe('normalizeUser', () => {
+  it('trims and lowercases', () => expect(normalizeUser('  HiKaru ')).toBe('hikaru'));
+});
+
+describe('getPlayer', () => {
+  it('resolves for an existing player', async () => {
+    server.use(http.get(`${API}/hikaru`, () => HttpResponse.json({ username: 'hikaru' })));
+    await expect(getPlayer(' HiKaru ')).resolves.toBeUndefined();
+  });
+
+  it('rejects an unknown player with kind notFound', async () => {
+    server.use(http.get(`${API}/nadie`, () => new HttpResponse(null, { status: 404 })));
+    await expect(getPlayer('nadie')).rejects.toMatchObject({ kind: 'notFound' });
+  });
+
+  it('rejects an unexpected body with kind shape', async () => {
+    server.use(http.get(`${API}/hikaru`, () => HttpResponse.json({ nope: 1 })));
+    await expect(getPlayer('hikaru')).rejects.toMatchObject({ kind: 'shape' });
+  });
+});
+
+describe('failures', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+  const rateLimited = () => new Response(null, { status: 429 });
+  const stubFetch = (...results: unknown[]) => {
+    const fetchMock = vi.fn();
+    for (const r of results) {
+      fetchMock.mockImplementationOnce(() => (r instanceof Error ? Promise.reject(r) : Promise.resolve(r)));
+    }
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  };
+
+  it('retries a 429 with exponential backoff and then succeeds', async () => {
+    vi.useFakeTimers();
+    const fetchMock = stubFetch(rateLimited(), rateLimited(), Response.json(archives));
+    const result = getArchives('hikaru');
+    await vi.advanceTimersByTimeAsync(999);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(2000);
+    await expect(result).resolves.toHaveLength(3);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('gives up after 3 retries with kind rateLimit', async () => {
+    vi.useFakeTimers();
+    const fetchMock = stubFetch(rateLimited(), rateLimited(), rateLimited(), rateLimited());
+    const result = expect(getArchives('hikaru')).rejects.toMatchObject({ kind: 'rateLimit', status: 429 });
+    await vi.advanceTimersByTimeAsync(1000 + 2000 + 4000);
+    await result;
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+  });
+
+  it('reports offline without sending the request', async () => {
+    const fetchMock = stubFetch();
+    vi.stubGlobal('navigator', { onLine: false });
+    await expect(getArchives('hikaru')).rejects.toMatchObject({ kind: 'offline' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('reports a network failure as offline', async () => {
+    stubFetch(new TypeError('Failed to fetch'));
+    await expect(getArchives('hikaru')).rejects.toMatchObject({ kind: 'offline' });
+  });
+
+  it('reports a timeout', async () => {
+    stubFetch(new DOMException('timed out', 'TimeoutError'));
+    await expect(getArchives('hikaru')).rejects.toMatchObject({ kind: 'timeout' });
+  });
+
+  it('reports a timeout while the body downloads', async () => {
+    stubFetch({ ok: true, json: () => Promise.reject(new DOMException('timed out', 'TimeoutError')) });
+    await expect(getArchives('hikaru')).rejects.toMatchObject({ kind: 'timeout' });
+  });
+
+  it('reports other statuses as http', async () => {
+    stubFetch(new Response(null, { status: 500 }));
+    await expect(getArchives('hikaru')).rejects.toMatchObject({ kind: 'http', status: 500 });
+  });
+
+  it('reports a body that is not JSON as shape', async () => {
+    stubFetch(new Response('<html>'));
+    await expect(getArchives('hikaru')).rejects.toMatchObject({ kind: 'shape' });
   });
 });
 

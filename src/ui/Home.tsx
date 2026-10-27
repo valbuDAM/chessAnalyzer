@@ -1,17 +1,34 @@
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
+import { getPlayer, normalizeUser } from '../domain/chesscom.ts';
+import { ApiError } from './ApiError.tsx';
 import './Home.css';
 
 export function Home() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   const [user, setUser] = useState('');
+  const [checking, setChecking] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+
+  function check() {
+    const name = normalizeUser(user);
+    if (!name) return;
+    setChecking(true);
+    setError(null);
+    getPlayer(name).then(
+      () => navigate(`/u/${encodeURIComponent(name)}`),
+      (e) => {
+        setError(e);
+        setChecking(false);
+      },
+    );
+  }
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    const name = user.trim();
-    if (name) navigate(`/u/${encodeURIComponent(name)}`);
+    check();
   }
 
   return (
@@ -30,9 +47,12 @@ export function Home() {
             spellCheck={false}
             required
           />
-          <button type="submit">{t('home.submit')}</button>
+          <button type="submit" disabled={checking}>
+            {t('home.submit')}
+          </button>
         </div>
       </form>
+      {error !== null && <ApiError error={error} onRetry={check} />}
     </main>
   );
 }

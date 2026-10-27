@@ -13,6 +13,7 @@ const game = {
 };
 
 test.beforeEach(async ({ page }) => {
+  await page.route('https://api.chess.com/pub/player/ana', (r) => r.fulfill({ json: { username: 'ana' } }));
   await page.route('https://api.chess.com/pub/player/ana/games/archives', (r) =>
     r.fulfill({ json: { archives: ['https://api.chess.com/pub/player/ana/games/2024/03'] } }),
   );

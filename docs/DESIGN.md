@@ -33,7 +33,7 @@ El matiz da el tono; el glifo, el significado. Glifo en `--color-on-label` (`#1c
 
 | Etiqueta | Marca | Color |
 |---|---|---|
-| Brillante | `!!` | `#e8c766` |
+| Brillante | `!!` | `#26c2a3` (el teal de chess.com, por elección de la usuaria) |
 | Gran jugada | `!` | `#9c86d6` |
 | Mejor | estrella | `#5db585` |
 | Buena | visto | `#a3b596` |

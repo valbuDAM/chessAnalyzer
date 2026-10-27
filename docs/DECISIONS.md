@@ -202,7 +202,8 @@ Formato breve: **Contexto · Decisión · Descartado · Consecuencias**. Todas s
   - Tipografía: una serif para títulos y cifras y una sans de interfaz, OFL, vía `@fontsource` (subconjunto latino), ≤ 2 pesos de la serif. Nada de Inter, Playfair ni Fraunces.
   - Piezas merida (Armando Hernández Marroquín, GPLv2+), SVG en el repo y atribuidas.
   - Tablero en colores planos de los tokens, sin texturas.
-  - Etiquetas: glifos de notación (`!!`, `!`, `?!`, `?`, `??`) y SVG mínimos; paleta propia, no la de chess.com; el significado no depende solo del color.
+  - Etiquetas: glifos de notación (`!!`, `!`, `?!`, `?`, `??`) y SVG mínimos; paleta propia salvo «brillante», que usa el teal de chess.com (`#26c2a3`) por elección de la usuaria, con glifo oscuro (8:1; el blanco daría 2,3:1); el significado no depende solo del color.
+  - Un solo PR de ~810 líneas de código, como excepción al límite de ~400 (decisión de la usuaria: la página de muestra no se puede revisar por partes).
   - Tema oscuro en `:root`, claro con `[data-theme="light"]`. Sin persistencia ni preferencia del sistema hasta T6.3.
   - Contraste verificado con axe en los dos temas; la hoja pinta todas las parejas texto/fondo.
   - Una sola propuesta real, iterando sobre `tokens.css`.

@@ -1,14 +1,15 @@
 # Roadmap — Zugzwang
 
-▶ Siguiente tarea: T0.4
+▶ Siguiente tarea: T0.5
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T0.3 · despliegue y protección de `main` (hecha, PR #7 mergeado)
-- **Hecho:** `public/_headers` (COOP/COEP) y las mismas cabeceras en `vite.config.ts` (server/preview); e2e `tests/e2e/isolation.spec.ts`. Despliegue como **Worker con assets estáticos** (no Pages): `wrangler.jsonc`, build `npm run build`, deploy `npx wrangler deploy`, URL `chessanalyzer.bvalbuena06.workers.dev`, previews por PR activadas. `main` protegida vía `gh api`: PR + status `check` (strict), admins incluidos, sin force-push.
-- **Avisos:** COEP `require-corp` bloquea `<img>` cross-origin sin CORP (avatares de chess.com): usar `crossOrigin="anonymous"` o COEP `credentialless`. Cabeceras duplicadas en `_headers` y `vite.config.ts`. El e2e solo comprueba local, no la URL de preview. Firefox/WebKit aún sin probar.
+- **Tarea:** T0.4 · i18n (hecha, PR #12 mergeado)
+- **Hecho:** `i18next` + `react-i18next`; catálogo `src/i18n/es.json` (solo `app.title`); claves tipadas vía `src/i18n/i18next.d.ts` (`t('clave.inexistente')` falla en typecheck, comprobado con `@ts-expect-error`); helpers `formatNumber/formatPercent/formatDate` en `src/i18n/format.ts` con tests. `src/i18n/index.ts` usa top-level await; `main.tsx` y los tests de `App` lo importan.
+- **Avisos:** el test de `formatDate` depende de los datos ICU de Node. Los helpers aún no se usan en la UI. Texto visible nuevo → clave en `es.json`. Heredados de T0.3: COEP `require-corp` bloquea `<img>` cross-origin sin CORP (avatares de chess.com: `crossOrigin="anonymous"` o COEP `credentialless`); cabeceras duplicadas en `_headers` y `vite.config.ts`; e2e de aislamiento solo en local; Firefox/WebKit sin probar.
+- **Siguiente:** T0.5 · sonnet · `/effort high` · advisor no · skill `frontend-design`.
 
 ## Leyenda
 
@@ -82,7 +83,7 @@
 **Depende de:** T0.2 · **Riesgos:** necesita acción manual en el panel de Cloudflare.
 **Modelo:** sonnet · low · advisor no · **Skills:** wizard
 
-### T0.4 · i18n — `en curso`
+### T0.4 · i18n — `hecha`
 **Objetivo:** Que todo texto visible salga de `src/i18n/es.json`.
 **RF:**
 - i18next + react-i18next con claves tipadas: una clave inexistente no compila.

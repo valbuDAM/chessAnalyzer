@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'wouter';
 import { type Game, getLastGame, outcome } from '../domain/chesscom.ts';
 import { formatDate, formatNumber } from '../i18n/format.ts';
+import { GameViewer } from './GameViewer.tsx';
 import './Home.css';
 
 type State = { status: 'loading' } | { status: 'error' } | { status: 'empty' } | { status: 'ready'; game: Game };
@@ -53,6 +54,7 @@ function LastGame({ game }: { game: Game }) {
       <p className="last-game-result">
         {t('user.result')}: <strong>{outcome(game)}</strong>
       </p>
+      <GameViewer pgn={game.pgn} />
     </section>
   );
 }

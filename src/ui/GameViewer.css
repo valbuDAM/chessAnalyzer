@@ -1,0 +1,31 @@
+.game-viewer {
+  display: grid;
+  gap: var(--space-3);
+  inline-size: 100%;
+}
+
+.game-viewer-status {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.game-viewer-controls {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.game-viewer-controls button {
+  flex: 1;
+  padding: var(--space-3) var(--space-5);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font: inherit;
+  font-weight: 700;
+}
+
+.game-viewer-controls button:disabled {
+  opacity: 0.5;
+}

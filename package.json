@@ -17,7 +17,8 @@
     "prepare": "simple-git-hooks",
     "preview": "vite preview",
     "e2e": "playwright test",
-    "lhci": "vite build && lhci autorun"
+    "lhci": "vite build && lhci autorun",
+    "mutate": "stryker run"
   },
   "simple-git-hooks": {
     "pre-commit": "npx biome check --staged --no-errors-on-unmatched",
@@ -37,6 +38,7 @@
     "@biomejs/biome": "2.6.3",
     "@lhci/cli": "0.15.1",
     "@playwright/test": "1.64.1",
+    "@stryker-mutator/core": "10.1.1",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.8",

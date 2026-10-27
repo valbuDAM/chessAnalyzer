@@ -1,15 +1,15 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T0.7
+▶ Siguiente tarea: T1.1
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T0.6 · Lighthouse CI (hecha, PR #17 mergeado)
-- **Hecho:** `lighthouserc.json` (3 ejecuciones sobre `vite preview` en `/`; rendimiento ≥ 0,9, accesibilidad = 1, scripts ≤ 204800 B, fuentes ≤ 122880 B como aserciones `resource-summary`), `@lhci/cli@0.15.1` fijada, script `npm run lhci` y paso en `ci.yml` tras el build. Local: rendimiento 0,99, accesibilidad 1, scripts 87 KB, fuentes 27 KB.
-- **Avisos:** solo se mide `/` (casi vacía): añadir la página de análisis a `url` cuando exista (T1.x). `budgetFile` y `budgetPath` no aplicaban el presupuesto (probado con 1 KB). El primer run en el runner de GitHub no se comprobó. Heredados de T0.5: COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`; Firefox/WebKit sin probar.
-- **Siguiente:** T0.7 · sonnet · `/effort low` · advisor no.
+- **Tarea:** T0.7 · Umbrales de cobertura y Stryker (hecha, PR #19 mergeado). Con ella se cierra M0.
+- **Hecho:** cobertura v8 en `vite.config.ts` (solo `src/domain/**/*.ts`, ramas ≥ 90 % con `perFile`; la CI ya ejecuta `npm test -- --coverage`). `@stryker-mutator/core@10.1.1` + `npm run mutate` con command runner (`npx vitest run src/domain --passWithNoTests`), `break: 80`, `cleanTempDir: always` e `ignorePatterns` (`.claude`, `dist`, `coverage`…). Deny de `Read(./.stryker-tmp/**)`. Ambos umbrales comprobados fallando con un archivo de prueba (25 % ramas, 33 % mutación).
+- **Avisos:** `"tsconfigFile": "none.json"` es a propósito: el rewrite de tsconfig de Stryker peta con TypeScript 7 (`ts.parseConfigFileTextToJson is not a function`); quitarlo cuando Stryker soporte TS 7. Los sandboxes huérfanos de `.stryker-tmp` (copias del repo con junction a `node_modules`) eran lo que colgaba las revisiones con sondas; si reaparecen, quitar los junctions con `rmdir` antes de `rm -rf`. Command runner = sin análisis por test: pasar a `@stryker-mutator/vitest-runner` si `mutate` se vuelve lento. Con `src/domain/` vacío la cobertura pasa sin medir nada. Heredados de T0.5/T0.6: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`; Firefox/WebKit sin probar.
+- **Siguiente:** cierre de M0 (checklist común: `ponytail-audit`, `ponytail-debt`, `npm run mutate`, e2e Firefox/WebKit, revisar `/usage`) y después T1.1 · sonnet · `/effort medium` · advisor no · skill tdd.
 
 ## Leyenda
 
@@ -126,7 +126,7 @@
 - Dada la página inicial, cuando se mide, entonces rendimiento ≥ 90 y accesibilidad = 100.
 **Depende de:** T0.2, T0.5 · **Modelo:** sonnet · low · advisor no
 
-### T0.7 · Umbrales de cobertura y Stryker — `pendiente`
+### T0.7 · Umbrales de cobertura y Stryker — `hecha`
 **Objetivo:** Que los umbrales de calidad sean ejecutables desde M1.
 **RF:**
 - Vitest con cobertura v8: umbral ≥ 90 % de ramas en `src/domain/**` (falla la CI).

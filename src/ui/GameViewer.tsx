@@ -15,7 +15,16 @@ type Analysis =
   | { status: 'done'; scores: WhiteScore[] }
   | { status: 'error' };
 
-export function GameViewer({ pgn, makeEngine = createEngine }: { pgn: string; makeEngine?: () => Engine }) {
+export function GameViewer({
+  pgn,
+  orientation = 'white',
+  makeEngine = createEngine,
+}: {
+  pgn: string;
+  /** The side shown at the bottom, for the board and the evaluation bar alike. */
+  orientation?: 'white' | 'black';
+  makeEngine?: () => Engine;
+}) {
   const { t } = useTranslation();
   const positions = useMemo(() => {
     try {
@@ -74,8 +83,10 @@ export function GameViewer({ pgn, makeEngine = createEngine }: { pgn: string; ma
   return (
     <section className="game-viewer" aria-label={t('game.title')}>
       <div className="game-viewer-play">
-        {currentScore && <EvalBar whitePercent={winPercent(currentScore)} text={formatEval(currentScore)} />}
-        <Board fen={current?.fen ?? ''} label={t('game.boardLabel')} />
+        {currentScore && (
+          <EvalBar whitePercent={winPercent(currentScore)} text={formatEval(currentScore)} orientation={orientation} />
+        )}
+        <Board fen={current?.fen ?? ''} label={t('game.boardLabel')} orientation={orientation} />
       </div>
       <p className="game-viewer-status" role="status">
         {t('game.move', { current: ply, total: last })}

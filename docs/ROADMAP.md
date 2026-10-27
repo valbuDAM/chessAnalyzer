@@ -290,6 +290,8 @@
 - Lista del mes más reciente, con «Cargar mes anterior».
 - Tarjeta por partida: rival, Elo, ritmo, color, resultado, fecha y número de jugadas.
 - Teclado: la lista es navegable y Enter abre la partida.
+- La partida se abre en `/u/:user/:gameId` con el usuario abajo (tablero y barra de evaluación girados si llevó negras).
+- Un mes que chess.com lista pero responde con 404 se marca «no disponible» y se puede seguir cargando los anteriores.
 **RNF:** 500 partidas sin tirones (virtualización solo si hace falta, medida antes).
 **Aceptación:**
 - Dado un usuario con 3 meses de partidas, cuando cargo meses anteriores, entonces se añaden en orden sin duplicados.

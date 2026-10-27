@@ -1,4 +1,5 @@
 import { get, set } from 'idb-keyval';
+import { gameId } from './games.ts';
 
 const API = 'https://api.chess.com/pub/player/';
 
@@ -134,8 +135,11 @@ function isClosedMonth(url: string): boolean {
 // shortcut: older versions are never deleted, add a cleanup if storage use ever matters.
 const cacheKey = (url: string) => `games:v1:${url}`;
 
-/** Closed months come from IndexedDB once stored; the current one relies on the browser's HTTP cache. */
-export async function getMonthGames(url: string): Promise<Game[]> {
+/**
+ * Closed months come from IndexedDB once stored; the current one relies on the browser's HTTP cache.
+ * null when chess.com lists the month but answers it with a 404 (seen on huge months), which says nothing about the user.
+ */
+export async function getMonthGames(url: string): Promise<Game[] | null> {
   if (!url.startsWith(API)) throw new ChessComError('Not a chess.com player API URL');
   const closed = isClosedMonth(url);
   if (closed) {
@@ -145,7 +149,13 @@ export async function getMonthGames(url: string): Promise<Game[]> {
       .catch(() => undefined);
     if (Array.isArray(cached)) return cached;
   }
-  const body = await getJson(url);
+  let body: unknown;
+  try {
+    body = await getJson(url);
+  } catch (e) {
+    if (e instanceof ChessComError && e.kind === 'notFound') return null;
+    throw e;
+  }
   if (!isRecord(body) || !Array.isArray(body.games)) throw new ChessComError('Unexpected month shape');
   const games = body.games.map(parseGame).filter((g): g is Game => g !== null);
   if (closed) {
@@ -156,11 +166,11 @@ export async function getMonthGames(url: string): Promise<Game[]> {
   return games;
 }
 
-/** Newest game, looking back month by month until one has games; null if the user never played. */
-export async function getLastGame(user: string): Promise<Game | null> {
+/** The game with that id, looking back month by month from the newest; null if no month has it. */
+export async function findGame(user: string, id: string): Promise<Game | null> {
   for (const url of (await getArchives(user)).reverse()) {
-    const games = await getMonthGames(url);
-    if (games.length) return games.reduce((a, b) => (b.endTime > a.endTime ? b : a));
+    const game = (await getMonthGames(url))?.find((g) => gameId(g) === id);
+    if (game) return game;
   }
   return null;
 }

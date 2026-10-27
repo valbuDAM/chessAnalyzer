@@ -6,7 +6,7 @@ import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import archives from '../../tests/fixtures/chesscom/archives.json';
 import month from '../../tests/fixtures/chesscom/month.json';
-import { ChessComError, getArchives, getLastGame, getMonthGames, getPlayer, normalizeUser, outcome } from './chesscom';
+import { ChessComError, findGame, getArchives, getMonthGames, getPlayer, normalizeUser, outcome } from './chesscom';
 
 const API = 'https://api.chess.com/pub/player';
 vi.mock('idb-keyval', async (importOriginal) => {
@@ -52,11 +52,25 @@ describe('getArchives', () => {
 describe('getMonthGames', () => {
   const url = `${API}/hikaru/games/2024/03`;
 
+  it('returns null, without caching, for a listed month chess.com answers with a 404', async () => {
+    vi.useFakeTimers({ now: Date.UTC(2024, 5, 1), toFake: ['Date'] });
+    let requests = 0;
+    server.use(
+      http.get(url, () => {
+        requests++;
+        return HttpResponse.json({ code: 0, message: 'An internal error has occurred.' }, { status: 404 });
+      }),
+    );
+    expect(await getMonthGames(url)).toBeNull();
+    expect(await getMonthGames(url)).toBeNull();
+    expect(requests).toBe(2);
+  });
+
   it('maps games to the domain type and skips ones without pgn', async () => {
     server.use(http.get(url, () => HttpResponse.json(month)));
     const games = await getMonthGames(url);
     expect(games).toHaveLength(1);
-    expect(games[0]).toMatchObject({
+    expect(games?.[0]).toMatchObject({
       url: 'https://www.chess.com/game/live/100000001',
       timeClass: 'blitz',
       rated: true,
@@ -64,7 +78,7 @@ describe('getMonthGames', () => {
       white: { username: 'Hikaru', rating: 3200, result: 'win' },
       black: { username: 'MagnusCarlsen', rating: 3190, result: 'resigned' },
     });
-    expect(games[0]?.pgn).toContain('1. e4 e5');
+    expect(games?.[0]?.pgn).toContain('1. e4 e5');
   });
 
   it('rejects a game with a malformed player', async () => {
@@ -251,30 +265,26 @@ describe('failures', () => {
   });
 });
 
-describe('getLastGame', () => {
-  it('returns the newest game of the newest month that has games', async () => {
+describe('findGame', () => {
+  it('looks for the id month by month, newest first, and stops when found', async () => {
+    const requested: string[] = [];
     server.use(
       http.get(`${API}/hikaru/games/archives`, () => HttpResponse.json(archives)),
-      http.get(`${API}/hikaru/games/2024/03`, () => HttpResponse.json({ games: [] })),
-      http.get(`${API}/hikaru/games/2024/01`, () => HttpResponse.json(month)),
+      http.get(`${API}/hikaru/games/:y/:m`, ({ params }) => {
+        requested.push(`${params.y}/${params.m}`);
+        return HttpResponse.json(params.m === '01' ? month : { games: [] });
+      }),
     );
-    expect((await getLastGame('hikaru'))?.url).toBe('https://www.chess.com/game/live/100000001');
+    expect((await findGame('hikaru', '100000001'))?.url).toBe('https://www.chess.com/game/live/100000001');
+    expect(requested).toEqual(['2024/03', '2024/01']);
   });
 
-  it('picks the highest end time, whatever the order in the month', async () => {
-    const [a] = month.games;
-    if (!a) throw new Error('empty fixture');
-    const newer = { ...a, url: 'https://www.chess.com/game/live/9', end_time: a.end_time + 1 };
+  it('returns null when no month has that id', async () => {
     server.use(
-      http.get(`${API}/hikaru/games/archives`, () => HttpResponse.json({ archives: [`${API}/hikaru/games/2024/01`] })),
-      http.get(`${API}/hikaru/games/2024/01`, () => HttpResponse.json({ games: [newer, a] })),
+      http.get(`${API}/hikaru/games/archives`, () => HttpResponse.json(archives)),
+      http.get(`${API}/hikaru/games/:y/:m`, () => HttpResponse.json(month)),
     );
-    expect((await getLastGame('hikaru'))?.url).toBe(newer.url);
-  });
-
-  it('returns null when the user has no games', async () => {
-    server.use(http.get(`${API}/nuevo/games/archives`, () => HttpResponse.json({ archives: [] })));
-    expect(await getLastGame('nuevo')).toBeNull();
+    expect(await findGame('hikaru', '999')).toBeNull();
   });
 });
 

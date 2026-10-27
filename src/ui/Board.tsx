@@ -4,7 +4,15 @@ import { useEffect, useRef } from 'react';
 import 'chessground/assets/chessground.base.css';
 import './Board.css';
 
-export function Board({ fen, label }: { fen: string; label: string }) {
+export function Board({
+  fen,
+  label,
+  orientation = 'white',
+}: {
+  fen: string;
+  label: string;
+  orientation?: 'white' | 'black';
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const api = useRef<Api>(null);
   useEffect(() => {
@@ -13,6 +21,6 @@ export function Board({ fen, label }: { fen: string; label: string }) {
     return () => api.current?.destroy();
   }, []);
   // set() on the live instance, so pieces animate to their new square instead of the board being rebuilt
-  useEffect(() => api.current?.set({ fen }), [fen]);
+  useEffect(() => api.current?.set({ fen, orientation }), [fen, orientation]);
   return <div className="board" ref={ref} role="img" aria-label={label} />;
 }

@@ -23,7 +23,12 @@
     "invalid": "No se pudo leer la partida.",
     "move": "Jugada {{current}} de {{total}}",
     "prev": "Anterior",
-    "next": "Siguiente"
+    "next": "Siguiente",
+    "analyse": "Analizar",
+    "analysing": "Analizando {{done}} de {{total}} posiciones…",
+    "progressLabel": "Progreso del análisis",
+    "analysisError": "No se pudo analizar la partida. Puedes seguir recorriéndola.",
+    "evalList": "Evaluación de cada jugada"
   },
   "moveLabel": {
     "brilliant": "Brillante",

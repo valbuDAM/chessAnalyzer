@@ -1,8 +1,20 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
+import type { Engine, Eval } from '../domain/engine/engine.ts';
+import { FakeEngine } from '../domain/engine/FakeEngine.ts';
+import { parseGamePgn } from '../domain/pgn.ts';
 import '../i18n/index.ts';
 import { GameViewer } from './GameViewer.tsx';
+
+const PGN = '1. e4 e5 2. Nf3 *';
+const ev = (cp: number): Eval => ({ score: { kind: 'cp', cp }, bestMove: 'e2e4', depth: 10, pv: [] });
+// The engine speaks from the side to move: positions 1 and 3 have black to move.
+const scriptedEngine = () => {
+  const fens = parseGamePgn(PGN).map((p) => p.fen);
+  return new FakeEngine(Object.fromEntries(fens.map((fen, i) => [fen, ev([20, 30, 25, 10][i] as number)])));
+};
+const minus = (s: string | null) => s?.replace(/−/g, '-');
 
 it('steps through the moves and disables the buttons at both ends', async () => {
   render(<GameViewer pgn="1. e4 e5 2. Nf3 *" />);
@@ -38,4 +50,64 @@ it('updates the board when stepping: a capture removes a pawn, stepping back res
 it('shows an alert when the PGN is not legal', () => {
   render(<GameViewer pgn="1. e4 e4 *" />);
   expect(screen.getByRole('alert')).toHaveTextContent('No se pudo leer');
+});
+
+it('analyses the game: evaluation list from white, bar following the current move, engine released', async () => {
+  const engine = scriptedEngine();
+  const dispose = vi.spyOn(engine, 'dispose');
+  render(<GameViewer pgn={PGN} makeEngine={() => engine} />);
+  expect(screen.queryByRole('meter')).toBeNull();
+
+  await userEvent.click(screen.getByRole('button', { name: 'Analizar' }));
+
+  const list = await screen.findByRole('list', { name: 'Evaluación de cada jugada' });
+  const rows = within(list).getAllByRole('listitem');
+  expect(rows.map((r) => minus(r.textContent))).toEqual(['1.e4-0,3', '1…e5+0,3', '2.Nf3-0,1']);
+  expect(screen.queryByRole('button', { name: 'Analizar' })).toBeNull();
+  expect(dispose).toHaveBeenCalledOnce();
+
+  expect(screen.getByRole('meter')).toHaveAttribute('aria-valuetext', '+0,2');
+  await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+  expect(minus(screen.getByRole('meter').getAttribute('aria-valuetext'))).toBe('-0,3');
+  expect(rows[0]).toHaveAttribute('aria-current', 'step');
+});
+
+it('shows progress and disables the button while analysing; leaving stops and releases the engine', async () => {
+  const engine: Engine = { analyse: () => new Promise(() => {}), stop: vi.fn(), dispose: vi.fn() };
+  const { unmount } = render(<GameViewer pgn={PGN} makeEngine={() => engine} />);
+
+  await userEvent.click(screen.getByRole('button', { name: 'Analizar' }));
+
+  expect(screen.getByText('Analizando 0 de 4 posiciones…')).toBeInTheDocument();
+  expect(screen.getByRole('progressbar', { name: 'Progreso del análisis' })).toHaveAttribute('max', '4');
+  expect(screen.getByRole('button', { name: 'Analizar' })).toBeDisabled();
+  unmount();
+  expect(engine.stop).toHaveBeenCalledOnce();
+  expect(engine.dispose).toHaveBeenCalled();
+});
+
+it('keeps the game usable and allows retrying when the engine fails', async () => {
+  const engine = new FakeEngine({});
+  const dispose = vi.spyOn(engine, 'dispose');
+  render(<GameViewer pgn={PGN} makeEngine={() => engine} />);
+
+  await userEvent.click(screen.getByRole('button', { name: 'Analizar' }));
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo analizar la partida');
+  expect(dispose).toHaveBeenCalledOnce();
+  expect(screen.getByRole('button', { name: 'Analizar' })).toBeEnabled();
+  await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+  expect(screen.getByRole('status')).toHaveTextContent('Jugada 1 de 3e4');
+});
+
+it('shows the failure when the engine cannot even be created', async () => {
+  const makeEngine = () => {
+    throw new Error('no worker');
+  };
+  render(<GameViewer pgn={PGN} makeEngine={makeEngine} />);
+
+  await userEvent.click(screen.getByRole('button', { name: 'Analizar' }));
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo analizar la partida');
+  expect(screen.getByRole('button', { name: 'Analizar' })).toBeEnabled();
 });

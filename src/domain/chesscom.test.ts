@@ -1,4 +1,6 @@
 // @vitest-environment node
+import 'fake-indexeddb/auto';
+import { clear, get, set } from 'idb-keyval';
 import { delay, HttpResponse, http } from 'msw';
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -7,9 +9,18 @@ import month from '../../tests/fixtures/chesscom/month.json';
 import { ChessComError, getArchives, getLastGame, getMonthGames, getPlayer, normalizeUser, outcome } from './chesscom';
 
 const API = 'https://api.chess.com/pub/player';
+vi.mock('idb-keyval', async (importOriginal) => {
+  const idb = await importOriginal<typeof import('idb-keyval')>();
+  return { ...idb, get: vi.fn(idb.get), set: vi.fn(idb.set) };
+});
+
 const server = setupServer();
 beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
+afterEach(async () => {
+  server.resetHandlers();
+  vi.useRealTimers();
+  await clear();
+});
 afterAll(() => server.close());
 
 describe('getArchives', () => {
@@ -71,6 +82,51 @@ describe('getMonthGames', () => {
   it('rejects a malformed body', async () => {
     server.use(http.get(url, () => HttpResponse.json({ games: [{ url: 'x', pgn: '1. e4' }] })));
     await expect(getMonthGames(url)).rejects.toBeInstanceOf(ChessComError);
+  });
+});
+
+describe('getMonthGames cache', () => {
+  const url = `${API}/hikaru/games/2024/03`;
+  let requests = 0;
+  const serveMonth = () => {
+    requests = 0;
+    server.use(
+      http.get(url, () => {
+        requests++;
+        return HttpResponse.json(month);
+      }),
+    );
+  };
+  const at = (iso: string) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(iso));
+  };
+
+  it('downloads a closed month only once', async () => {
+    serveMonth();
+    const first = await getMonthGames(url);
+    expect(await getMonthGames(url)).toEqual(first);
+    expect(requests).toBe(1);
+  });
+
+  it('closes a month 24 h after it ends, in UTC', async () => {
+    serveMonth();
+    at('2024-04-01T23:59:59.999Z');
+    await getMonthGames(url);
+    await getMonthGames(url);
+    expect(requests).toBe(2);
+    at('2024-04-02T00:00:00.000Z');
+    await getMonthGames(url);
+    await getMonthGames(url);
+    expect(requests).toBe(3);
+  });
+
+  it('falls back to the network when IndexedDB fails', async () => {
+    serveMonth();
+    vi.mocked(get).mockRejectedValueOnce(new Error('blocked'));
+    vi.mocked(set).mockRejectedValueOnce(new DOMException('full', 'QuotaExceededError'));
+    await expect(getMonthGames(url)).resolves.toHaveLength(1);
+    expect(requests).toBe(1);
   });
 });
 

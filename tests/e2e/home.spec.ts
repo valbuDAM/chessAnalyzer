@@ -38,3 +38,16 @@ test('opening /u/:user directly shows the same (SPA fallback)', async ({ page })
   await page.goto('/u/hikaru');
   await expect(page.getByText('MagnusCarlsen')).toBeVisible();
 });
+
+test('a closed month is downloaded only once, even after a reload', async ({ page }) => {
+  let requests = 0;
+  await page.route('https://api.chess.com/pub/player/hikaru/games/2024/03', (r) => {
+    requests++;
+    return r.fulfill({ json: month });
+  });
+  await page.goto('/u/hikaru');
+  await expect(page.getByText('MagnusCarlsen')).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('MagnusCarlsen')).toBeVisible();
+  expect(requests).toBe(1);
+});

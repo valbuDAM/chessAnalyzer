@@ -4,7 +4,7 @@ import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import archives from '../../tests/fixtures/chesscom/archives.json';
 import month from '../../tests/fixtures/chesscom/month.json';
-import { ChessComError, getArchives, getMonthGames } from './chesscom';
+import { ChessComError, getArchives, getLastGame, getMonthGames, outcome } from './chesscom';
 
 const API = 'https://api.chess.com/pub/player';
 const server = setupServer();
@@ -101,5 +101,42 @@ describe('serial queue', () => {
     const [a, b] = await Promise.allSettled([getArchives('a'), getArchives('b')]);
     expect(a.status).toBe('rejected');
     expect(b.status).toBe('fulfilled');
+  });
+});
+
+describe('getLastGame', () => {
+  it('returns the newest game of the newest month that has games', async () => {
+    server.use(
+      http.get(`${API}/hikaru/games/archives`, () => HttpResponse.json(archives)),
+      http.get(`${API}/hikaru/games/2024/03`, () => HttpResponse.json({ games: [] })),
+      http.get(`${API}/hikaru/games/2024/01`, () => HttpResponse.json(month)),
+    );
+    expect((await getLastGame('hikaru'))?.url).toBe('https://www.chess.com/game/live/100000001');
+  });
+
+  it('picks the highest end time, whatever the order in the month', async () => {
+    const [a] = month.games;
+    if (!a) throw new Error('empty fixture');
+    const newer = { ...a, url: 'https://www.chess.com/game/live/9', end_time: a.end_time + 1 };
+    server.use(
+      http.get(`${API}/hikaru/games/archives`, () => HttpResponse.json({ archives: [`${API}/hikaru/games/2024/01`] })),
+      http.get(`${API}/hikaru/games/2024/01`, () => HttpResponse.json({ games: [newer, a] })),
+    );
+    expect((await getLastGame('hikaru'))?.url).toBe(newer.url);
+  });
+
+  it('returns null when the user has no games', async () => {
+    server.use(http.get(`${API}/nuevo/games/archives`, () => HttpResponse.json({ archives: [] })));
+    expect(await getLastGame('nuevo')).toBeNull();
+  });
+});
+
+describe('outcome', () => {
+  const side = (result: string) => ({ username: 'x', rating: 1, result });
+  const game = (w: string, b: string) => ({ white: side(w), black: side(b) });
+  it('maps results to a score', () => {
+    expect(outcome(game('win', 'resigned'))).toBe('1-0');
+    expect(outcome(game('checkmated', 'win'))).toBe('0-1');
+    expect(outcome(game('agreed', 'agreed'))).toBe('½-½');
   });
 });

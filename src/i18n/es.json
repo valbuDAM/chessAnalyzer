@@ -2,6 +2,21 @@
   "app": {
     "title": "Zugzwang"
   },
+  "home": {
+    "lead": "Analiza tus partidas de chess.com con Stockfish, sin salir del navegador.",
+    "userLabel": "Usuario de chess.com",
+    "submit": "Ver última partida"
+  },
+  "user": {
+    "back": "Cambiar de usuario",
+    "loading": "Buscando su última partida…",
+    "error": "No se pudo cargar la partida. Comprueba el nombre de usuario e inténtalo de nuevo.",
+    "empty": "Este usuario no tiene partidas.",
+    "lastGame": "Última partida",
+    "white": "Blancas",
+    "black": "Negras",
+    "result": "Resultado"
+  },
   "moveLabel": {
     "brilliant": "Brillante",
     "great": "Gran jugada",

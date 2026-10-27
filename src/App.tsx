@@ -1,6 +1,12 @@
-import { useTranslation } from 'react-i18next';
+import { Route, Switch } from 'wouter';
+import { Home } from './ui/Home.tsx';
+import { UserPage } from './ui/UserPage.tsx';
 
 export function App() {
-  const { t } = useTranslation();
-  return <h1>{t('app.title')}</h1>;
+  return (
+    <Switch>
+      <Route path="/u/:user">{({ user }) => <UserPage user={user} />}</Route>
+      <Route component={Home} />
+    </Switch>
+  );
 }

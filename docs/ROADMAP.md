@@ -1,13 +1,18 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T2.2
+▶ Siguiente tarea: T2.3
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T2.1 cerrada (PR #34). T2.2 sin empezar.
-- **Entregado en T2.1:**
+- **Tarea:** T2.2 cerrada (PR #37). T2.3 sin empezar.
+- **Entregado en T2.2:**
+  - `getMonthGames(url)` en `src/domain/chesscom.ts` guarda el `Game[]` ya validado de los meses cerrados en IndexedDB (`idb-keyval`, clave `games:v1:<url>`) y lo devuelve sin red la siguiente vez. Un mes está cerrado cuando han pasado 24 h desde el inicio del mes siguiente en UTC, para dar margen a las partidas indexadas tarde. El mes en curso no cambia: lo cubre la caché HTTP del navegador (ADR).
+  - Si IndexedDB falla al leer o escribir (cuota llena, bloqueado, no disponible), el error se ignora y se descarga. La lectura de la caché va fuera de la cola en serie.
+  - Tests: unitarios con `fake-indexeddb` (una sola descarga, límite exacto de 24 h, fallos de IDB, con `get`/`set` espiados por `vi.mock`) y e2e en `home.spec.ts` que recarga y cuenta 1 petición. Comprobado también en el navegador con la API real: un mes cerrado de `erik` hace 0 peticiones tras recargar.
+- **Límites de T2.2:** las claves de versiones antiguas no se borran nunca (`shortcut:`). Si el reloj del cliente va más de 24 h adelantado, el mes en curso se guardaría incompleto (riesgo aceptado). Los datos leídos de IDB solo se comprueban con `Array.isArray`. Al cambiar el tipo `Game`, hay que subir la versión de la clave a mano.
+- **Entregado en T2.1** (PR #34):
   - `src/domain/chesscom.ts`: `ChessComError(message, kind = 'shape', status?)` con `ErrorKind = notFound | rateLimit | offline | timeout | http | shape`. `fetchOk` reintenta el 429 hasta 3 veces (1 s, 2 s, 4 s) dentro de la cola en serie, aplica timeout de 15 s (`AbortSignal.timeout`, que también cubre la descarga del cuerpo) y trata `navigator.onLine === false` y los fallos de `fetch` como `offline`. `getPlayer(user)` y `normalizeUser(user)` (recortar y minúsculas) nuevos; `getArchives` usa `normalizeUser`.
   - `src/ui/ApiError.tsx`: `role="alert"` con el mensaje de `error.<kind>` y «Reintentar» salvo en `notFound` y `shape`. Lo usan `Home` (que valida con `getPlayer` antes de navegar, así el campo conserva el texto) y `UserPage` (reintenta con un contador `attempt`).
   - e2e: usuario inexistente con axe en `home.spec.ts`; `home` y `analysis` interceptan también `GET /player/{user}`.
@@ -51,7 +56,7 @@
   - Si reaparecen sandboxes en `.stryker-tmp`, quitar primero los junctions con `rmdir` y después `rm -rf`.
   - Pasar a `@stryker-mutator/vitest-runner` si `mutate` se vuelve lento.
     - T1.1 ya activa la cobertura de `src/domain/` (`chesscom.ts` 93,5 % ramas). Cliente: `getArchives` y `getMonthGames`, cola en serie; fixtures escritos a mano, no respuestas reales.  - Heredados: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`.
-- **Siguiente:** T2.2 · `/model sonnet`, `/advisor off`, `/effort medium` (ya coincide). Skill `tdd`; `grilling` antes de tocar código por la decisión de la caché del mes en curso (ADR).
+- **Siguiente:** T2.3 · `/model sonnet`, `/advisor off`, `/effort medium`. Es UX nueva: skill `grilling` (tarjeta, «Cargar mes anterior», teclado) antes de tocar código, y después `frontend-design`. Reutiliza `getArchives` + `getMonthGames`, que ya trae la caché.
 
 ## Leyenda
 
@@ -267,7 +272,7 @@
 **Tests:** U de la cola y los reintentos (temporizadores falsos) · E de cada error con MSW.
 **Depende de:** T1.5 · **Modelo:** sonnet · medium · advisor no · **Skills:** tdd
 
-### T2.2 · Caché de partidas — `pendiente`
+### T2.2 · Caché de partidas — `hecha` (PR #37)
 **Objetivo:** No volver a descargar lo que no puede cambiar.
 **RF:**
 - Los **meses cerrados** son inmutables y se guardan en IndexedDB (idb-keyval) por URL.

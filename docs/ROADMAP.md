@@ -1,15 +1,15 @@
 # Roadmap — Zugzwang
 
-▶ Siguiente tarea: T0.5
+▶ Siguiente tarea: T0.6
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T0.4 · i18n (hecha, PR #12 mergeado)
-- **Hecho:** `i18next` + `react-i18next`; catálogo `src/i18n/es.json` (solo `app.title`); claves tipadas vía `src/i18n/i18next.d.ts` (`t('clave.inexistente')` falla en typecheck, comprobado con `@ts-expect-error`); helpers `formatNumber/formatPercent/formatDate` en `src/i18n/format.ts` con tests. `src/i18n/index.ts` usa top-level await; `main.tsx` y los tests de `App` lo importan.
-- **Avisos:** el test de `formatDate` depende de los datos ICU de Node. Los helpers aún no se usan en la UI. Texto visible nuevo → clave en `es.json`. Heredados de T0.3: COEP `require-corp` bloquea `<img>` cross-origin sin CORP (avatares de chess.com: `crossOrigin="anonymous"` o COEP `credentialless`); cabeceras duplicadas en `_headers` y `vite.config.ts`; e2e de aislamiento solo en local; Firefox/WebKit sin probar.
-- **Siguiente:** T0.5 · sonnet · `/effort high` · advisor no · skill `frontend-design`.
+- **Tarea:** T0.5 · hoja de estilo (hecha, PR #15 mergeado y aprobado por la usuaria)
+- **Hecho:** `src/styles/tokens.css` (oscuro en `:root`, claro con `[data-theme="light"]`, motion a 0 con `prefers-reduced-motion`) y `base.css` (Young Serif + Atkinson Hyperlegible Next vía `@fontsource`, ~61 KB). Componentes `src/ui/Board.tsx` (chessground, piezas merida en `public/pieces/merida/`), `EvalBar.tsx`, `MoveBadge.tsx` (9 etiquetas). `styleguide.html` como 2.ª entrada de Vite, sin enlazar; e2e axe en ambos temas. `docs/DESIGN.md` con valores, contrastes y atribuciones. Decisiones en ADR-024 (brillante en el teal de chess.com `#26c2a3` con glifo oscuro; PR único de ~810 líneas como excepción).
+- **Avisos:** `/styleguide` sin `.html` depende de `auto-trailing-slash` de Cloudflare. `MoveLabel` vive en `src/ui/MoveBadge.tsx`; cuando exista la clasificación en `src/domain/` (ADR-012), el tipo debe salir de allí. En la lista de etiquetas de la hoja, el lector de pantalla anuncia el nombre dos veces (menor). El signo de la evaluación se formatea a mano en la hoja; si la app lo necesita, va a `src/i18n/format.ts`. Heredados: COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`; Firefox/WebKit sin probar.
+- **Siguiente:** T0.6 · sonnet · `/effort low` · advisor no.
 
 ## Leyenda
 
@@ -93,7 +93,7 @@
 **Tests:** U de los helpers de `Intl`.
 **Depende de:** T0.1 · **Modelo:** sonnet · low · advisor no
 
-### T0.5 · Hoja de estilo «club clásico reinventado» — `en review`
+### T0.5 · Hoja de estilo «club clásico reinventado» — `hecha`
 **Objetivo:** Fijar la identidad visual C y sus tokens, con aprobación de la usuaria.
 **RF:**
 - Una página `/styleguide` (sin enlazar y con `noindex`) con:

@@ -1,3 +1,5 @@
+import { get, set } from 'idb-keyval';
+
 const API = 'https://api.chess.com/pub/player/';
 
 export type Side = { username: string; rating: number; result: string };
@@ -119,11 +121,39 @@ export async function getArchives(user: string): Promise<string[]> {
   return [...body.archives].sort();
 }
 
+const DAY_MS = 86_400_000;
+
+/** Immutable once a day has passed since the month ended (UTC), leaving time for late games to be indexed. */
+function isClosedMonth(url: string): boolean {
+  const m = /\/(\d{4})\/(\d{2})$/.exec(url);
+  // the 1-based month doubles as the 0-based index of the next month
+  return m !== null && Date.now() >= Date.UTC(Number(m[1]), Number(m[2]), 1) + DAY_MS;
+}
+
+// Bump the version whenever Game changes shape.
+// shortcut: older versions are never deleted, add a cleanup if storage use ever matters.
+const cacheKey = (url: string) => `games:v1:${url}`;
+
+/** Closed months come from IndexedDB once stored; the current one relies on the browser's HTTP cache. */
 export async function getMonthGames(url: string): Promise<Game[]> {
   if (!url.startsWith(API)) throw new ChessComError('Not a chess.com player API URL');
+  const closed = isClosedMonth(url);
+  if (closed) {
+    // storage is optional: blocked IndexedDB or a full quota just means downloading again
+    const cached: unknown = await Promise.resolve()
+      .then(() => get(cacheKey(url)))
+      .catch(() => undefined);
+    if (Array.isArray(cached)) return cached;
+  }
   const body = await getJson(url);
   if (!isRecord(body) || !Array.isArray(body.games)) throw new ChessComError('Unexpected month shape');
-  return body.games.map(parseGame).filter((g): g is Game => g !== null);
+  const games = body.games.map(parseGame).filter((g): g is Game => g !== null);
+  if (closed) {
+    await Promise.resolve()
+      .then(() => set(cacheKey(url), games))
+      .catch(() => {});
+  }
+  return games;
 }
 
 /** Newest game, looking back month by month until one has games; null if the user never played. */

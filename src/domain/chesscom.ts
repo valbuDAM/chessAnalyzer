@@ -84,3 +84,15 @@ export async function getMonthGames(url: string): Promise<Game[]> {
   if (!isRecord(body) || !Array.isArray(body.games)) throw new ChessComError('Unexpected month shape');
   return body.games.map(parseGame).filter((g): g is Game => g !== null);
 }
+
+/** Newest game, looking back month by month until one has games; null if the user never played. */
+export async function getLastGame(user: string): Promise<Game | null> {
+  for (const url of (await getArchives(user)).reverse()) {
+    const games = await getMonthGames(url);
+    if (games.length) return games.reduce((a, b) => (b.endTime > a.endTime ? b : a));
+  }
+  return null;
+}
+
+export const outcome = ({ white, black }: Pick<Game, 'white' | 'black'>): '1-0' | '0-1' | '½-½' =>
+  white.result === 'win' ? '1-0' : black.result === 'win' ? '0-1' : '½-½';

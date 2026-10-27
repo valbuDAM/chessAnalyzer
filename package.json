@@ -18,7 +18,8 @@
     "preview": "vite preview",
     "e2e": "playwright test",
     "lhci": "vite build && lhci autorun",
-    "mutate": "stryker run"
+    "mutate": "stryker run",
+    "vendor:engine": "node scripts/vendor-engine.mjs"
   },
   "simple-git-hooks": {
     "pre-commit": "npx biome check --staged --no-errors-on-unmatched",

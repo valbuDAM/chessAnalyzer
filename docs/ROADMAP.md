@@ -1,12 +1,18 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T1.5
+▶ Siguiente tarea: T2.1
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T1.4 cerrada (PR #30). T1.5 sin empezar.
+- **Tarea:** T1.5 cerrada (PR #32), con lo que M1 queda completo salvo su checklist de cierre. T2.1 sin empezar.
+- **Entregado en T1.5** (ADR-026):
+  - `src/domain/analysis.ts`: `analyseGame(engine, fens, { depth, onProgress })` → `WhiteScore[]` (punto de vista de blancas, N+1 posiciones, en serie); `winPercent(score)` con la fórmula de ADR-011 (T5.1 la reutiliza y añade la precisión); `ANALYSIS_DEPTH = 10`; `FinalScore = {kind:'final', winner}` para mate/ahogado/material insuficiente, que no se mandan al motor.
+  - `formatEval` en `src/i18n/format.ts` («+0,3», «-#2», «1-0», «½-½»).
+  - `GameViewer` acepta `makeEngine` (por defecto `createEngine`): botón «Analizar», `<progress>` nativo, `EvalBar` que sigue a la jugada y lista `<ol>` de evaluaciones. El motor se crea al pulsar y se libera al terminar, al fallar y al desmontar.
+- **Límites de T1.5:** sin cancelar, sin selector de profundidad, la lista no salta a la jugada al pulsarla, no se guarda el análisis (se pierde al salir; caché en T4.3). Una partida de ~140 jugadas a profundidad 10 con el lite de un hilo puede pasar de un minuto. `GameViewer` no se reinicia si cambia la prop `pgn` (hoy se desmonta al cambiar de usuario).
+- **⚠ Criterio sin cumplir:** «el flujo completo funciona en la previsualización desplegada» (T1.5) se comprobó con `vite preview` local y API simulada, porque las previews de Cloudflare siguen apagadas (ver la deuda aceptada más abajo). Tampoco se ha comprobado que Cloudflare sirva el `.wasm` como `application/wasm` en producción: mirar `/engine/stockfish-19-lite-single.wasm` en la URL de producción tras el siguiente despliegue.
 - **Entregado en T1.4** (decisiones en ADR-025):
   - `src/domain/engine/`: `Engine { analyse(fen, opts?) → Promise<Eval>; stop(); dispose() }`, `Eval = { score, bestMove, depth, pv }`, `Score = {kind:'cp',cp} | {kind:'mate',mate}` **desde el punto de vista del bando que mueve** (T1.5 y la precisión tienen que pasarlo a blancas), `DEFAULT_DEPTH = 12`, `EngineError` y `AbortError`. `UciEngine` lleva todo el protocolo sobre un `Transport` inyectable; `FakeEngine(evals por FEN)` para los tests de consumidores.
   - `src/engine/createEngine.ts`: único código de navegador; `createEngine()` crea el Worker de `public/engine/stockfish-19-lite-single.js` **al instanciarse** (el handshake sí es perezoso). Quien lo cree debe llamar a `dispose()` al desmontar.
@@ -28,6 +34,12 @@
   - `ponytail-debt`: no hay ningún marcador `shortcut:`.
   - e2e Chromium, móvil, Firefox y WebKit en verde: run manual `all_browsers` 40480713028 sobre `main`.
   - `ponytail-audit`: dos hallazgos. Corregido el guard de git, que bloqueaba rutas con «commit»/«push» (PR #21). El segundo (`Board` recreaba chessground en cada `fen`) se corrigió en T1.3.
+- **Cierre de M1:**
+  - `npm run mutate` en verde: 86,5 % (`analysis.ts` 100 %, `pgn.ts` 90,9 %, `uci.ts` 92,1 %, `UciEngine.ts` 81,1 %, `chesscom.ts` 81,4 %). **Tardó 21 min**: pasar a `@stryker-mutator/vitest-runner` antes de M2.
+  - e2e Chromium, móvil, Firefox y WebKit en verde: run manual `all_browsers` 40497619054 sobre `main`.
+  - `ponytail-debt`: un solo marcador `shortcut:` (`UciEngine.ts`: solo ajedrez estándar y sin timeout de arranque).
+  - `ponytail-audit`: sano, JS inicial ~115 KB gz (presupuesto 200). Dos hallazgos aceptados, sin tarea propia: (1) la CI no verifica que `public/engine/` coincida con los SHA-256 fijados: añadir `node scripts/vendor-engine.mjs --check` (sale con error si no coincide, sin descargar) como paso de CI antes del build; (2) falta un test de `UciEngine` para `stop()` entre `ucinewgame`/`isready` y `go` (la rama `if (job.settled) return` tras `readyok`). Los dos entran de paso en la primera tarea que toque el motor (T4.1/T4.2).
+  - Pendiente de la usuaria: revisar `/usage`.
 - **Avisos:**
   - `stryker.config.json` lleva `"tsconfigFile": "none.json"` a propósito: el rewrite de tsconfig de Stryker peta con TypeScript 7. Quitarlo cuando Stryker soporte TS 7.
   - Si reaparecen sandboxes en `.stryker-tmp`, quitar primero los junctions con `rmdir` y después `rm -rf`.
@@ -35,7 +47,7 @@
   - Un fallo de red en la UI se muestra como el error genérico (cualquier excepción); no se distingue 404 de red caída. Mejorar cuando haya mensajes por causa.
   - T1.1 ya activa la cobertura de `src/domain/` (`chesscom.ts` 93,5 % ramas). Cliente: `getArchives` y `getMonthGames`, cola en serie; fixtures escritos a mano, no respuestas reales. Un fallo de red lanza `TypeError`, no `ChessComError`; la UI actual no lo necesita.
   - Heredados: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`.
-- **Siguiente:** T1.5 · `/model sonnet`, `/effort medium` y `/advisor off` (viene de T1.4 con opusplan, high y advisor opus). Skill `grilling` antes de tocar código si hay UI nueva (progreso, barra, lista de evaluaciones) y `frontend-design` para ella.
+- **Siguiente:** T2.1 · ya estás en `/model sonnet` y `/advisor off`; `/effort medium`. Skill `tdd`; `grilling` antes de tocar código si hay mensajes o UI nuevos (estados de error, «Reintentar»).
 
 ## Leyenda
 
@@ -220,7 +232,7 @@
 **Depende de:** T1.3 · **Modelo:** `/model opusplan` + plan mode para el diseño; luego `/effort high` · advisor sí (`/advisor opus` al empezar, `/advisor off` al cerrar) · **Skills:** grilling, codebase-design · **Riesgos:** carga del Worker en Vite dev/prod → probarlo pronto en la previsualización.
 **Modelo:** opusplan · high · advisor sí · **Skills:** codebase-design, tdd
 
-### T1.5 · Análisis de la partida (versión tracer) — `pendiente`
+### T1.5 · Análisis de la partida (versión tracer) — `hecha`
 **Objetivo:** Analizar todas las posiciones en serie y mostrar la evaluación por jugada y una barra simple.
 **Aceptación:**
 - Dada una partida cargada, cuando pulso «Analizar», entonces veo el progreso y, al acabar, la evaluación de cada jugada.

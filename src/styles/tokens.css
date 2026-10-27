@@ -1,0 +1,95 @@
+/* Zugzwang design tokens. Every colour, size and duration in the UI comes from here. See docs/DESIGN.md. */
+
+:root {
+  color-scheme: dark;
+
+  /* Wood and brass: dark theme (default) */
+  --color-bg: #1c1410;
+  --color-surface: #261b15;
+  --color-raised: #33251c;
+  --color-text: #efe4cf;
+  --color-text-muted: #bca98c;
+  --color-accent: #d4a84b;
+  --color-focus: #e8c766;
+
+  /* Felt and board: identical in both themes, the table is the table */
+  --color-felt: #1e4a38;
+  --color-on-felt: #efe4cf;
+  --color-on-felt-muted: #d0bb9a;
+  --color-board-light: #d9c7a0;
+  --color-board-dark: #3f6a54;
+  --color-board-coord-on-light: #1c1410;
+  --color-board-coord-on-dark: #efe4cf;
+  --color-eval-white: #efe4cf;
+  --color-eval-black: #1c1410;
+  --shadow-felt: inset 0 0 2rem rgb(0 0 0 / 35%);
+
+  /* Move labels: hue carries mood, the glyph carries meaning */
+  --color-label-brilliant: #e8c766;
+  --color-label-great: #9c86d6;
+  --color-label-best: #5db585;
+  --color-label-good: #a3b596;
+  --color-label-book: #b08a64;
+  --color-label-inaccuracy: #e49b3f;
+  --color-label-mistake: #e0663e;
+  --color-label-blunder: #b4283a;
+  --color-label-miss: #d46a9c;
+  --color-on-label: #1c1410;
+  --color-on-label-strong: #fff3e8;
+
+  /* Type */
+  --font-display: "Young Serif", Georgia, serif;
+  --font-ui: "Atkinson Hyperlegible Next Variable", system-ui, sans-serif;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.3125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2.25rem;
+  --text-3xl: 3rem;
+  --text-display: clamp(3rem, 9vw, 4.5rem);
+  --leading-tight: 1.1;
+  --leading-ui: 1.45;
+  --leading-serif: 1.6;
+  --measure: 68ch;
+
+  /* Space (4 px grid) and radii */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --radius-sm: 2px;
+  --radius-md: 6px;
+  --radius-round: 999px;
+  --border-inlay: 2px;
+
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-base: 220ms;
+  --duration-slow: 420ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-bg: #e9e1cf;
+  --color-surface: #f3ede0;
+  --color-raised: #ddd3be;
+  --color-text: #2a1d15;
+  --color-text-muted: #5e4b3a;
+  --color-accent: #6e4f0f;
+  --color-focus: #6e4f0f;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+}

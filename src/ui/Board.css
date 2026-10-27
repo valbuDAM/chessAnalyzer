@@ -1,0 +1,69 @@
+/* biome-ignore-all lint/correctness/noUnknownTypeSelector: chessground renders custom elements (cg-board, piece, coords). */
+.board {
+  inline-size: 100%;
+  aspect-ratio: 1;
+}
+
+/* Flat two-tone board: one conic tile covers 2×2 squares, a8 light. */
+.board cg-board {
+  background: repeating-conic-gradient(var(--color-board-dark) 0 25%, var(--color-board-light) 0 50%) 0 0 / 25% 25%;
+}
+
+.board coords {
+  font-family: var(--font-ui);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+/* Coordinates take the opposite square colour (same parity rules as lichess themes). */
+.board coords coord {
+  color: var(--color-board-coord-on-dark);
+}
+.board.orientation-white .files coord:nth-child(2n + 1),
+.board.orientation-white .ranks coord:nth-child(2n),
+.board.orientation-black .files coord:nth-child(2n),
+.board.orientation-black .ranks coord:nth-child(2n + 1) {
+  color: var(--color-board-coord-on-light);
+}
+
+.board piece.pawn.white {
+  background-image: url("/pieces/merida/wP.svg");
+}
+.board piece.knight.white {
+  background-image: url("/pieces/merida/wN.svg");
+}
+.board piece.bishop.white {
+  background-image: url("/pieces/merida/wB.svg");
+}
+.board piece.rook.white {
+  background-image: url("/pieces/merida/wR.svg");
+}
+.board piece.queen.white {
+  background-image: url("/pieces/merida/wQ.svg");
+}
+.board piece.king.white {
+  background-image: url("/pieces/merida/wK.svg");
+}
+.board piece.pawn.black {
+  background-image: url("/pieces/merida/bP.svg");
+}
+.board piece.knight.black {
+  background-image: url("/pieces/merida/bN.svg");
+}
+.board piece.bishop.black {
+  background-image: url("/pieces/merida/bB.svg");
+}
+.board piece.rook.black {
+  background-image: url("/pieces/merida/bR.svg");
+}
+.board piece.queen.black {
+  background-image: url("/pieces/merida/bQ.svg");
+}
+.board piece.king.black {
+  background-image: url("/pieces/merida/bK.svg");
+}
+
+/* Files in lowercase, as in algebraic notation (chessground uppercases them). */
+.board coords.files {
+  text-transform: none;
+}

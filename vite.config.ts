@@ -11,6 +11,8 @@ export default defineConfig({
   plugins: [react()],
   server: { headers: isolation },
   preview: { headers: isolation },
+  // styleguide.html ships unlinked (noindex) so axe runs on it in CI and it can be reviewed on PR previews.
+  build: { rolldownOptions: { input: ['index.html', 'styleguide.html'] } },
   test: {
     environment: 'jsdom',
     setupFiles: ['src/test-setup.ts'],

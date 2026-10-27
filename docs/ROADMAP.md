@@ -28,7 +28,7 @@
   - Un fallo de red en la UI se muestra como el error genérico (cualquier excepción); no se distingue 404 de red caída. Mejorar cuando haya mensajes por causa.
   - T1.1 ya activa la cobertura de `src/domain/` (`chesscom.ts` 93,5 % ramas). Cliente: `getArchives` y `getMonthGames`, cola en serie; fixtures escritos a mano, no respuestas reales. Un fallo de red lanza `TypeError`, no `ChessComError`; la UI actual no lo necesita.
   - Heredados: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`.
-- **Siguiente:** T1.4 · su bloque no fija modelo/esfuerzo/advisor. Según CLAUDE.md es diseño de interfaz (skill `codebase-design`, antes `grilling`) y cola del motor: `/model opusplan` + plan mode, luego `/effort high` y `/advisor opus`. Pendiente de que la usuaria lo confirme y lo escriba en el bloque.
+- **Siguiente:** T1.4 · `/model opusplan` + plan mode (skills `grilling` y `codebase-design` antes de tocar código); al pasar a implementar, `/effort high` y `/advisor opus`; al cerrar, `/model sonnet` y `/advisor off`.
 
 ## Leyenda
 
@@ -210,7 +210,7 @@
 - Dada la posición inicial, cuando analizo a profundidad 10, entonces recibo una evaluación entre −100 y +100 cp y una mejor jugada legal.
 - Dada una posición de mate en 1, cuando analizo, entonces recibo `mate: 1` y la jugada que da mate.
 **Tests:** U del parser de líneas UCI (`info`, `bestmove`, mate, cotas) con `FakeEngine` · I con el motor real (Playwright, 2 casos).
-**Depende de:** T1.3 · **Riesgos:** carga del Worker en Vite dev/prod → probarlo pronto en la previsualización.
+**Depende de:** T1.3 · **Modelo:** `/model opusplan` + plan mode para el diseño; luego `/effort high` · advisor sí (`/advisor opus` al empezar, `/advisor off` al cerrar) · **Skills:** grilling, codebase-design · **Riesgos:** carga del Worker en Vite dev/prod → probarlo pronto en la previsualización.
 **Modelo:** opusplan · high · advisor sí · **Skills:** codebase-design, tdd
 
 ### T1.5 · Análisis de la partida (versión tracer) — `pendiente`

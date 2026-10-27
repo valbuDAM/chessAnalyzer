@@ -1,12 +1,18 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T2.1
+▶ Siguiente tarea: T2.2
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T1.5 cerrada (PR #32), con lo que M1 queda completo salvo su checklist de cierre. T2.1 sin empezar.
+- **Tarea:** T2.1 cerrada (PR #34). T2.2 sin empezar.
+- **Entregado en T2.1:**
+  - `src/domain/chesscom.ts`: `ChessComError(message, kind = 'shape', status?)` con `ErrorKind = notFound | rateLimit | offline | timeout | http | shape`. `fetchOk` reintenta el 429 hasta 3 veces (1 s, 2 s, 4 s) dentro de la cola en serie, aplica timeout de 15 s (`AbortSignal.timeout`, que también cubre la descarga del cuerpo) y trata `navigator.onLine === false` y los fallos de `fetch` como `offline`. `getPlayer(user)` y `normalizeUser(user)` (recortar y minúsculas) nuevos; `getArchives` usa `normalizeUser`.
+  - `src/ui/ApiError.tsx`: `role="alert"` con el mensaje de `error.<kind>` y «Reintentar» salvo en `notFound` y `shape`. Lo usan `Home` (que valida con `getPlayer` antes de navegar, así el campo conserva el texto) y `UserPage` (reintenta con un contador `attempt`).
+  - e2e: usuario inexistente con axe en `home.spec.ts`; `home` y `analysis` interceptan también `GET /player/{user}`.
+- **Límites de T2.1:** no se lee `Retry-After`, la espera es fija y exponencial. Un enlace directo `/u/x` a un usuario inexistente se detecta por el 404 de los archivos, sin pedir el perfil. El error de `Home` no se borra al editar el campo, solo al reenviar. No hay e2e del 429 ni del modo sin conexión (cubiertos en unitarios). Los tests de `App` usan `mockRejectedValueOnce`: el `mockRejectedValue` persistente daba un rechazo no manejado en vitest.
+- **Antes, T1.5:** cerrada (PR #32); M1 completo salvo su checklist de cierre.
 - **Entregado en T1.5** (ADR-026):
   - `src/domain/analysis.ts`: `analyseGame(engine, fens, { depth, onProgress })` → `WhiteScore[]` (punto de vista de blancas, N+1 posiciones, en serie); `winPercent(score)` con la fórmula de ADR-011 (T5.1 la reutiliza y añade la precisión); `ANALYSIS_DEPTH = 10`; `FinalScore = {kind:'final', winner}` para mate/ahogado/material insuficiente, que no se mandan al motor.
   - `formatEval` en `src/i18n/format.ts` («+0,3», «-#2», «1-0», «½-½»).
@@ -44,10 +50,8 @@
   - `stryker.config.json` lleva `"tsconfigFile": "none.json"` a propósito: el rewrite de tsconfig de Stryker peta con TypeScript 7. Quitarlo cuando Stryker soporte TS 7.
   - Si reaparecen sandboxes en `.stryker-tmp`, quitar primero los junctions con `rmdir` y después `rm -rf`.
   - Pasar a `@stryker-mutator/vitest-runner` si `mutate` se vuelve lento.
-  - Un fallo de red en la UI se muestra como el error genérico (cualquier excepción); no se distingue 404 de red caída. Mejorar cuando haya mensajes por causa.
-  - T1.1 ya activa la cobertura de `src/domain/` (`chesscom.ts` 93,5 % ramas). Cliente: `getArchives` y `getMonthGames`, cola en serie; fixtures escritos a mano, no respuestas reales. Un fallo de red lanza `TypeError`, no `ChessComError`; la UI actual no lo necesita.
-  - Heredados: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`.
-- **Siguiente:** T2.1 · ya estás en `/model sonnet` y `/advisor off`; `/effort medium`. Skill `tdd`; `grilling` antes de tocar código si hay mensajes o UI nuevos (estados de error, «Reintentar»).
+    - T1.1 ya activa la cobertura de `src/domain/` (`chesscom.ts` 93,5 % ramas). Cliente: `getArchives` y `getMonthGames`, cola en serie; fixtures escritos a mano, no respuestas reales.  - Heredados: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`.
+- **Siguiente:** T2.2 · `/model sonnet`, `/advisor off`, `/effort medium` (ya coincide). Skill `tdd`; `grilling` antes de tocar código por la decisión de la caché del mes en curso (ADR).
 
 ## Leyenda
 
@@ -244,7 +248,7 @@
 
 ## M2 · Carga de partidas completa
 
-### T2.1 · Errores de la API y validación de usuario — `pendiente`
+### T2.1 · Errores de la API y validación de usuario — `hecha` (PR #34)
 **Objetivo:** Que cada fallo de la API tenga su mensaje y su recuperación.
 **RF:**
 - `GET /player/{user}` antes de pedir los archivos.

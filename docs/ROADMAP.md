@@ -45,7 +45,7 @@
   - e2e Chromium, móvil, Firefox y WebKit en verde: run manual `all_browsers` 40497619054 sobre `main`.
   - `ponytail-debt`: un solo marcador `shortcut:` (`UciEngine.ts`: solo ajedrez estándar y sin timeout de arranque).
   - `ponytail-audit`: sano, JS inicial ~115 KB gz (presupuesto 200). Dos hallazgos aceptados, sin tarea propia: (1) la CI no verifica que `public/engine/` coincida con los SHA-256 fijados: añadir `node scripts/vendor-engine.mjs --check` (sale con error si no coincide, sin descargar) como paso de CI antes del build; (2) falta un test de `UciEngine` para `stop()` entre `ucinewgame`/`isready` y `go` (la rama `if (job.settled) return` tras `readyok`). Los dos entran de paso en la primera tarea que toque el motor (T4.1/T4.2).
-  - Pendiente de la usuaria: revisar `/usage`.
+  - `/usage` al 53 % al cerrar M1 y T2.1 (revisado por la usuaria).
 - **Avisos:**
   - `stryker.config.json` lleva `"tsconfigFile": "none.json"` a propósito: el rewrite de tsconfig de Stryker peta con TypeScript 7. Quitarlo cuando Stryker soporte TS 7.
   - Si reaparecen sandboxes en `.stryker-tmp`, quitar primero los junctions con `rmdir` y después `rm -rf`.

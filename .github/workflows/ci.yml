@@ -51,10 +51,12 @@ jobs:
           key: pw-${{ runner.os }}-${{ steps.pw.outputs.version }}-${{ inputs.all_browsers }}
       - name: Install browsers
         if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium ${{ inputs.all_browsers && 'firefox webkit' || '' }}
-      - name: Install browser system deps
-        if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium ${{ inputs.all_browsers && 'firefox webkit' || '' }}
+        run: npx playwright install chromium ${{ inputs.all_browsers && 'firefox webkit' || '' }}
+      # The runner image already ships Chromium's libs; apt here hung twice for 10 min.
+      - name: Install Firefox/WebKit system deps
+        if: inputs.all_browsers
+        timeout-minutes: 5
+        run: npx playwright install-deps firefox webkit
       - name: e2e
         run: npm run e2e
       - uses: actions/upload-artifact@v4

@@ -17,6 +17,14 @@
     "black": "Negras",
     "result": "Resultado"
   },
+  "game": {
+    "title": "Repetición de la partida",
+    "boardLabel": "Tablero de la partida",
+    "invalid": "No se pudo leer la partida.",
+    "move": "Jugada {{current}} de {{total}}",
+    "prev": "Anterior",
+    "next": "Siguiente"
+  },
   "moveLabel": {
     "brilliant": "Brillante",
     "great": "Gran jugada",

@@ -1,0 +1,4 @@
+Stockfish 19.0.1 (WASM build by nmrugg/stockfish.js), GPL-3.0, see COPYING.txt.
+Source: https://github.com/nmrugg/stockfish.js/releases/tag/v19.0.1
+Package: https://unpkg.com/stockfish@19.0.1/
+Vendored by scripts/vendor-engine.mjs.

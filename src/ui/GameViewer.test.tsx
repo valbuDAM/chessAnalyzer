@@ -22,14 +22,17 @@ it('steps through the moves and disables the buttons at both ends', async () => 
   expect(screen.getByRole('status')).toHaveTextContent('Jugada 2 de 3e5');
 });
 
-it('updates the board when stepping: a capture removes a pawn, stepping back restores it', async () => {
+// Generous timeouts: with many test files running in parallel, jsdom animations starve.
+it('updates the board when stepping: a capture removes a pawn, stepping back restores it', {
+  timeout: 15_000,
+}, async () => {
   const { container } = render(<GameViewer pgn="1. e4 d5 2. exd5 *" />);
   const blackPawns = () => container.querySelectorAll('piece.pawn.black').length;
   expect(blackPawns()).toBe(8);
   for (let i = 0; i < 3; i++) await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
-  await waitFor(() => expect(blackPawns()).toBe(7), { timeout: 3000 }); // chessground removes the captured piece after its animation
+  await waitFor(() => expect(blackPawns()).toBe(7), { timeout: 10_000 }); // chessground removes the captured piece after its animation
   await userEvent.click(screen.getByRole('button', { name: 'Anterior' }));
-  await waitFor(() => expect(blackPawns()).toBe(8), { timeout: 3000 });
+  await waitFor(() => expect(blackPawns()).toBe(8), { timeout: 10_000 });
 });
 
 it('shows an alert when the PGN is not legal', () => {

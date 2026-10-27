@@ -208,3 +208,16 @@ Formato breve: **Contexto · Decisión · Descartado · Consecuencias**. Todas s
   - Contraste verificado con axe en los dos temas; la hoja pinta todas las parejas texto/fondo.
   - Una sola propuesta real, iterando sobre `tokens.css`.
 - **Descartado:** página solo en dev (no se ve en CI ni en la preview), `wouter` antes de M1, texturas de madera, juegos de piezas CC BY-NC-SA (incompatibles), test unitario de contraste propio.
+
+### ADR-025 · Interfaz del motor (T1.4)
+- **Fecha:** 2026-10-27.
+- **Decisión:**
+  - `Engine { analyse(fen, opts?) → Promise<Eval>; stop(); dispose() }`. `Eval = { score, bestMove, depth, pv }`, solo el resultado final (sin `onProgress`). `opts` = `{ depth?, movetime? }`, por defecto profundidad 12.
+  - `Score` es una unión `{kind:'cp',cp} | {kind:'mate',mate}` desde el punto de vista del bando que mueve, como UCI. Pasar a «blancas» es cosa del dominio de precisión.
+  - Cola en serie. `stop()` rechaza el análisis en curso y los encolados con `AbortError`, y la cola espera al `bestmove` de la búsqueda abortada para que no contamine la siguiente.
+  - `UciEngine` (en `src/domain/engine/`) lleva todo el protocolo sobre un `Transport` inyectable; el único código de navegador es `src/engine/createEngine.ts` (`Worker`). Los tests usan un transporte guionizado y `FakeEngine`.
+  - El `.js` de Stockfish es su propio Worker: se le habla directamente, sin Worker intermedio.
+  - Se valida el FEN con chessops antes de enviar nada; las posiciones terminales se rechazan con `EngineError`. Si el Worker falla, todo lo pendiente rechaza con `EngineError`, sin reinicio automático ni timeout de arranque.
+  - T1.4 solo carga lite de un hilo; el selector de variante (multihilo, asm.js) queda para una tarea posterior. `vendor-engine.mjs` ya baja las tres, con SHA-256 fijados en el primer uso y `COPYING.txt` + `SOURCE.txt` (GPL).
+  - `engine-check.html`, entrada de Vite sin enlazar como `styleguide.html`, ejecuta el motor real para el e2e. Sin i18n por ser herramienta de desarrollo.
+- **Descartado:** `onProgress`/streaming, `MultiPV` y `Threads` en `opts`, cancelar el análisis previo al llegar otro, ruta wouter `/dev/engine`, exponer `window.__engine` en producción.

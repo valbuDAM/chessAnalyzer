@@ -12,7 +12,8 @@ export default defineConfig({
   server: { headers: isolation },
   preview: { headers: isolation },
   // styleguide.html ships unlinked (noindex) so axe runs on it in CI and it can be reviewed on PR previews.
-  build: { rolldownOptions: { input: ['index.html', 'styleguide.html'] } },
+  // engine-check.html is the same kind of unlinked page: e2e runs the real engine there.
+  build: { rolldownOptions: { input: ['index.html', 'styleguide.html', 'engine-check.html'] } },
   test: {
     environment: 'jsdom',
     setupFiles: ['src/test-setup.ts'],

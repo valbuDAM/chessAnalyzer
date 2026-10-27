@@ -1,12 +1,12 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T1.1
+▶ Siguiente tarea: T1.2
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** M0 cerrado (T0.0–T0.7). T1.1 sin empezar.
+- **Tarea:** T1.1 cerrada (PR #23). T1.2 sin empezar.
 - **⚠ BLOQUEANTE ABIERTO: el check `Workers Builds: chessanalyzer` de Cloudflare falla en TODOS los PR (#17–#21) y nunca ha pasado en verde.** Consecuencias:
   - No hay URL de preview por PR, así que no se puede revisar la UI como pide el flujo (paso 9 de `CLAUDE.md`).
   - El criterio de T0.3 (`crossOriginIsolated === true` en un e2e contra la preview) **no se cumple en realidad**.
@@ -26,9 +26,9 @@
   - `stryker.config.json` lleva `"tsconfigFile": "none.json"` a propósito: el rewrite de tsconfig de Stryker peta con TypeScript 7. Quitarlo cuando Stryker soporte TS 7.
   - Si reaparecen sandboxes en `.stryker-tmp`, quitar primero los junctions con `rmdir` y después `rm -rf`.
   - Pasar a `@stryker-mutator/vitest-runner` si `mutate` se vuelve lento.
-  - Con `src/domain/` vacío, la cobertura pasa sin medir nada; T1.1 será el primer código que la active.
+  - T1.1 ya activa la cobertura de `src/domain/` (`chesscom.ts` 93,5 % ramas). Cliente: `getArchives` y `getMonthGames`, cola en serie; fixtures escritos a mano, no respuestas reales. Un fallo de red lanza `TypeError`, no `ChessComError`: envolverlo en T1.2 si la UI lo necesita.
   - Heredados: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`.
-- **Siguiente:** T1.1 · sonnet · `/effort medium` · advisor no · skill tdd. Hay que arreglar Cloudflare (arriba) antes de cerrar T1.2.
+- **Siguiente:** T1.2 · sonnet · `/effort medium` · advisor no · skill frontend-design. Hay que arreglar Cloudflare (arriba) antes de cerrar T1.2.
 
 ## Leyenda
 
@@ -159,7 +159,7 @@
 
 ## M1 · Tracer bullet (de punta a punta, mínimo y desplegado)
 
-### T1.1 · Cliente mínimo de chess.com — `pendiente`
+### T1.1 · Cliente mínimo de chess.com — `hecha`
 **Objetivo:** Obtener la lista de archivos mensuales y las partidas de un mes.
 **RF:**
 - `getArchives(user)` y `getMonthGames(url)` con tipos de dominio.

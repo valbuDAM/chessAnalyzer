@@ -221,3 +221,15 @@ Formato breve: **Contexto · Decisión · Descartado · Consecuencias**. Todas s
   - T1.4 solo carga lite de un hilo; el selector de variante (multihilo, asm.js) queda para una tarea posterior. `vendor-engine.mjs` ya baja las tres, con SHA-256 fijados en el primer uso y `COPYING.txt` + `SOURCE.txt` (GPL).
   - `engine-check.html`, entrada de Vite sin enlazar como `styleguide.html`, ejecuta el motor real para el e2e. Sin i18n por ser herramienta de desarrollo.
 - **Descartado:** `onProgress`/streaming, `MultiPV` y `Threads` en `opts`, cancelar el análisis previo al llegar otro, ruta wouter `/dev/engine`, exponer `window.__engine` en producción.
+
+### ADR-026 · Análisis de la partida, versión tracer (T1.5)
+- **Fecha:** 2026-10-27.
+- **Decisión:**
+  - `analyseGame(engine, fens, { depth, onProgress })` en `src/domain/analysis.ts`: analiza las N+1 posiciones en serie y devuelve `WhiteScore[]`, ya en punto de vista de blancas (el motor habla desde el bando que mueve).
+  - Las posiciones finales (mate, ahogado, material insuficiente) no se envían al motor, que las rechaza: se resuelven con chessops como `{ kind: 'final', winner }`. Se muestran como «1-0», «0-1» o «½-½».
+  - `winPercent(score)` ya usa la fórmula de ADR-011 (mate = ±1000 cp). T5.1 la reutiliza y añade la precisión.
+  - Profundidad fija `ANALYSIS_DEPTH = 10`, sin selector hasta M4/M5.
+  - `GameViewer` recibe `makeEngine` (por defecto `createEngine`): crea el motor al pulsar «Analizar» y lo libera al terminar, al fallar y al desmontar. Un fallo muestra una alerta y el visor sigue usable.
+  - Progreso con `<progress>` nativo: un `role="status"` leería cada posición.
+  - El e2e usa `vite preview` local con la API de chess.com simulada y el motor real; el criterio «en la previsualización desplegada» queda pendiente mientras las previews de Cloudflare sigan apagadas.
+- **Descartado:** botón de cancelar, selector de profundidad, lista interactiva que salta a la jugada, parámetro de profundidad en la URL para el e2e.

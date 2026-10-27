@@ -1,21 +1,18 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T1.2
+▶ Siguiente tarea: T1.3
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T1.1 cerrada (PR #23). T1.2 sin empezar.
-- **⚠ BLOQUEANTE ABIERTO: el check `Workers Builds: chessanalyzer` de Cloudflare falla en TODOS los PR (#17–#21) y nunca ha pasado en verde.** Consecuencias:
-  - No hay URL de preview por PR, así que no se puede revisar la UI como pide el flujo (paso 9 de `CLAUDE.md`).
-  - El criterio de T0.3 (`crossOriginIsolated === true` en un e2e contra la preview) **no se cumple en realidad**.
-  - **Plazo:** tiene que pasar en verde **antes de cerrar T1.2**, la primera pantalla que hay que revisar en preview. Si se puede, que pase antes.
-  - Lo que se sabe:
-    - Es un proyecto de **Workers** con assets estáticos (`wrangler.jsonc`: `dist`, fallback SPA), no de Pages como dice ADR-010.
-    - La rama sin mergear `origin/chore/t0-3-previews` probó un bloque `"previews": {}` sin éxito.
-    - La causa sigue sin conocerse: el log solo se ve en el panel de Cloudflare (enlace en `gh pr checks <n>`).
-  - **Primer paso:** que la usuaria pegue el log del build fallido y diagnosticar con `diagnosing-bugs`. Cosas a mirar: comando de build/deploy del panel, versión de Node, `prepare: simple-git-hooks` sin `.git`, TypeScript 7 en `npm run build`.
+- **Tarea:** T1.2 cerrada (PR #25). T1.3 sin empezar.
+- **Entregado en T1.2:** wouter con `/` y `/u/:user` (cualquier otra ruta cae en la home); `getLastGame` y `outcome` en `chesscom.ts`; `Home` y `UserPage` en `src/ui/`. Faltan `/u/:user/:gameId` y `/pgn`: se añaden con sus pantallas (T1.3 y la entrada por PGN). Comprobado en local contra chess.com real con COEP: `crossOriginIsolated` true y la partida carga.
+- **⚠ DEUDA ACEPTADA: previews de Cloudflare apagadas.** El interruptor *Builds for Preview branches* está apagado a propósito; los builds de `main` (producción) funcionan.
+  - **Causa:** los builds de rama ejecutan `npx wrangler versions upload` (modelo antiguo de previews) y fallan con «The name in your wrangler.jsonc file (chessanalyzer) must match the name of your Worker». Es el bug [cloudflare/workers-sdk#15682](https://github.com/cloudflare/workers-sdk/issues/15682) (`WRANGLER_CI_MATCH_TAG` de las ramas no corresponde a ningún Worker).
+  - **Probado sin éxito:** `env -u WRANGLER_CI_MATCH_TAG …` en *Previews Base → Preview command*: ese campo se guarda pero los builds de rama lo ignoran. El panel no ofrece el banner «Set up Worker Previews» ni otro campo de comando para ramas; *Trigger events* no aplica (Worker solo con assets).
+  - **Consecuencias:** no hay URL de preview por PR. La revisión de UI se hace en local con `npm run build && npx vite preview` (trae las mismas cabeceras). El criterio de T0.3 (`crossOriginIsolated` contra la preview) sigue sin cumplirse en Cloudflare.
+  - **Para retomarlo:** contactar con Cloudflare o esperar el arreglo del issue; o desplegar previews desde GitHub Actions con un token como secreto (cambio de arquitectura: grilling + ADR). Al volver a activar el interruptor hace falta un bloque `"previews": {}` en `wrangler.jsonc` si se usa `npx wrangler preview`.
 - **Cierre de M0:**
   - `/usage` al 22 %.
   - `npm run mutate` en verde, aunque vacío (score NaN, no hay dominio).
@@ -26,9 +23,10 @@
   - `stryker.config.json` lleva `"tsconfigFile": "none.json"` a propósito: el rewrite de tsconfig de Stryker peta con TypeScript 7. Quitarlo cuando Stryker soporte TS 7.
   - Si reaparecen sandboxes en `.stryker-tmp`, quitar primero los junctions con `rmdir` y después `rm -rf`.
   - Pasar a `@stryker-mutator/vitest-runner` si `mutate` se vuelve lento.
-  - T1.1 ya activa la cobertura de `src/domain/` (`chesscom.ts` 93,5 % ramas). Cliente: `getArchives` y `getMonthGames`, cola en serie; fixtures escritos a mano, no respuestas reales. Un fallo de red lanza `TypeError`, no `ChessComError`: envolverlo en T1.2 si la UI lo necesita.
+  - Un fallo de red en la UI se muestra como el error genérico (cualquier excepción); no se distingue 404 de red caída. Mejorar cuando haya mensajes por causa.
+  - T1.1 ya activa la cobertura de `src/domain/` (`chesscom.ts` 93,5 % ramas). Cliente: `getArchives` y `getMonthGames`, cola en serie; fixtures escritos a mano, no respuestas reales. Un fallo de red lanza `TypeError`, no `ChessComError`; la UI actual no lo necesita.
   - Heredados: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`.
-- **Siguiente:** T1.2 · sonnet · `/effort medium` · advisor no · skill frontend-design. Hay que arreglar Cloudflare (arriba) antes de cerrar T1.2.
+- **Siguiente:** T1.3 · sonnet · `/effort medium` · advisor no · skills tdd y frontend-design. Incluye crear chessground una sola vez (ver ponytail-audit).
 
 ## Leyenda
 
@@ -100,7 +98,7 @@
 - Dado un push directo a `main`, cuando lo intento, entonces GitHub lo rechaza.
 **Tests:** E de `crossOriginIsolated` (en local con `vite preview` configurado con las mismas cabeceras).
 **Depende de:** T0.2 · **Riesgos:** necesita acción manual en el panel de Cloudflare.
-**⚠ Pendiente:** el build de Cloudflare (`Workers Builds`) falla en todos los PR, así que no hay preview y el e2e contra la preview no se cumple. Ver las notas de traspaso; hay que arreglarlo antes de cerrar T1.2.
+**⚠ Deuda aceptada:** las previews de rama de Cloudflare están apagadas por un bug de Cloudflare, así que el e2e contra la preview no se cumple. Ver las notas de traspaso.
 **Modelo:** sonnet · low · advisor no · **Skills:** wizard
 
 ### T0.4 · i18n — `hecha`
@@ -172,7 +170,7 @@
 **Depende de:** T0.1 · **Riesgos:** cambios en el formato de la API → validar la respuesta en la frontera.
 **Modelo:** sonnet · medium · advisor no · **Skills:** tdd
 
-### T1.2 · Pantalla de inicio: usuario → última partida — `pendiente`
+### T1.2 · Pantalla de inicio: usuario → última partida — `hecha`
 **Objetivo:** Introducir un usuario y ver su última partida (jugadores, Elo, resultado).
 **RF:**
 - Rutas con wouter desde el principio: `/`, `/u/:user`, `/u/:user/:gameId`, `/pgn`, con fallback SPA en Cloudflare.

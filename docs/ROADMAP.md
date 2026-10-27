@@ -1,15 +1,15 @@
-# Roadmap — Zugzwang
+﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T0.6
+▶ Siguiente tarea: T0.7
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T0.5 · hoja de estilo (hecha, PR #15 mergeado y aprobado por la usuaria)
-- **Hecho:** `src/styles/tokens.css` (oscuro en `:root`, claro con `[data-theme="light"]`, motion a 0 con `prefers-reduced-motion`) y `base.css` (Young Serif + Atkinson Hyperlegible Next vía `@fontsource`, ~61 KB). Componentes `src/ui/Board.tsx` (chessground, piezas merida en `public/pieces/merida/`), `EvalBar.tsx`, `MoveBadge.tsx` (9 etiquetas). `styleguide.html` como 2.ª entrada de Vite, sin enlazar; e2e axe en ambos temas. `docs/DESIGN.md` con valores, contrastes y atribuciones. Decisiones en ADR-024 (brillante en el teal de chess.com `#26c2a3` con glifo oscuro; PR único de ~810 líneas como excepción).
-- **Avisos:** `/styleguide` sin `.html` depende de `auto-trailing-slash` de Cloudflare. `MoveLabel` vive en `src/ui/MoveBadge.tsx`; cuando exista la clasificación en `src/domain/` (ADR-012), el tipo debe salir de allí. En la lista de etiquetas de la hoja, el lector de pantalla anuncia el nombre dos veces (menor). El signo de la evaluación se formatea a mano en la hoja; si la app lo necesita, va a `src/i18n/format.ts`. Heredados: COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`; Firefox/WebKit sin probar.
-- **Siguiente:** T0.6 · sonnet · `/effort low` · advisor no.
+- **Tarea:** T0.6 · Lighthouse CI (hecha, PR #17 mergeado)
+- **Hecho:** `lighthouserc.json` (3 ejecuciones sobre `vite preview` en `/`; rendimiento ≥ 0,9, accesibilidad = 1, scripts ≤ 204800 B, fuentes ≤ 122880 B como aserciones `resource-summary`), `@lhci/cli@0.15.1` fijada, script `npm run lhci` y paso en `ci.yml` tras el build. Local: rendimiento 0,99, accesibilidad 1, scripts 87 KB, fuentes 27 KB.
+- **Avisos:** solo se mide `/` (casi vacía): añadir la página de análisis a `url` cuando exista (T1.x). `budgetFile` y `budgetPath` no aplicaban el presupuesto (probado con 1 KB). El primer run en el runner de GitHub no se comprobó. Heredados de T0.5: COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`; Firefox/WebKit sin probar.
+- **Siguiente:** T0.7 · sonnet · `/effort low` · advisor no.
 
 ## Leyenda
 
@@ -116,11 +116,11 @@
 **Depende de:** T0.1, T0.4 · **Riesgos:** iteraciones visuales caras en tokens → una sola propuesta e iterar sobre ella.
 **Modelo:** sonnet · high · advisor no · **Skills:** frontend-design
 
-### T0.6 · Lighthouse CI y presupuesto — `pendiente`
+### T0.6 · Lighthouse CI y presupuesto — `hecha`
 **Objetivo:** Detectar regresiones de rendimiento y accesibilidad en la CI.
 **RF:**
 - Lighthouse CI sobre `vite preview`.
-- `budget.json` con JS inicial ≤ 200 KB gz y fuentes ≤ 120 KB.
+- Presupuesto en `lighthouserc.json` (no `budget.json`: LHCI no lo aplica junto a las aserciones de puntuación): JS ≤ 200 KB gz y fuentes ≤ 120 KB.
 **Aceptación:**
 - Dado un PR que supera el presupuesto, cuando se ejecuta la CI, entonces falla con la métrica concreta.
 - Dada la página inicial, cuando se mide, entonces rendimiento ≥ 90 y accesibilidad = 100.

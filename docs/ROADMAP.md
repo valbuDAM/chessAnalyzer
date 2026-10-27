@@ -1,14 +1,21 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T1.4
+▶ Siguiente tarea: T1.5
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T1.3 cerrada (PR #27). T1.4 sin empezar.
+- **Tarea:** T1.4 cerrada (PR #30). T1.5 sin empezar.
+- **Entregado en T1.4** (decisiones en ADR-025):
+  - `src/domain/engine/`: `Engine { analyse(fen, opts?) → Promise<Eval>; stop(); dispose() }`, `Eval = { score, bestMove, depth, pv }`, `Score = {kind:'cp',cp} | {kind:'mate',mate}` **desde el punto de vista del bando que mueve** (T1.5 y la precisión tienen que pasarlo a blancas), `DEFAULT_DEPTH = 12`, `EngineError` y `AbortError`. `UciEngine` lleva todo el protocolo sobre un `Transport` inyectable; `FakeEngine(evals por FEN)` para los tests de consumidores.
+  - `src/engine/createEngine.ts`: único código de navegador; `createEngine()` crea el Worker de `public/engine/stockfish-19-lite-single.js` **al instanciarse** (el handshake sí es perezoso). Quien lo cree debe llamar a `dispose()` al desmontar.
+  - `scripts/vendor-engine.mjs` (`npm run vendor:engine`): Stockfish 19.0.1 de unpkg a `public/engine/` (lite de un hilo, lite multihilo, asm.js, `COPYING.txt`, `SOURCE.txt`), hashes SHA-256 fijados en el primer uso, idempotente, excluido de Biome.
+  - `engine-check.html` (+ `src/engine/check.tsx`): página sin enlazar y `noindex` que ejecuta el motor real; la usa `tests/e2e/engine.spec.ts` (2 criterios de aceptación, `application/wasm`, UI viva, axe). Sin i18n a propósito.
+- **Límites de T1.4:** solo se carga el lite de un hilo; multihilo y asm.js están vendorizados pero sin usar (selector de variante en una tarea posterior, ADR-008). Sin `onProgress`, `MultiPV`, reinicio del Worker ni timeout de arranque; solo ajedrez estándar (`// shortcut:` en `UciEngine.ts`). `depth`/`movetime` deben ser enteros positivos. Sin comprobar que Cloudflare sirva el `.wasm` como `application/wasm` en producción (previews apagadas; sí con `vite preview`). Un solo PR de ~430 líneas de código (con HTML y config), dentro de lo razonable.
+- **Test de `GameViewer`:** fallaba al correr toda la suite en una máquina de 12 núcleos (chessground se retrasa con muchos workers); ahora espera hasta 10 s y el test tiene 15 s. Si vuelve a fallar, limitar `maxWorkers` en vitest.
 - **Entregado en T1.3:** `parseGamePgn` en `src/domain/pgn.ts` (N+1 posiciones: `fen`, `san`, `uci`, `clock` en segundos; enroque como `e1g1`, y rey-toma-torre si `Variant` es Chess960); `Board` crea chessground una vez y usa `api.set({ fen })`; `GameViewer` (Anterior/Siguiente) va dentro de la última partida de `/u/:user`. Comprobado en local con una partida real de 140 jugadas. Dependencia `chessops` añadida.
-- **Decisiones y límites de T1.3:** no se creó `/u/:user/:gameId` (el visor va en `UserPage`; la ruta hará falta cuando se elijan otras partidas) ni `/pgn` (entrada por PGN). Los relojes se leen pero no se muestran. Sin flechas de teclado. `opacity: 0.5` de los botones deshabilitados no sale de `tokens.css`. El test del visor espera hasta 3 s porque chessground retira la pieza capturada tras su animación.
+- **Decisiones y límites de T1.3:** no se creó `/u/:user/:gameId` (el visor va en `UserPage`; la ruta hará falta cuando se elijan otras partidas) ni `/pgn` (entrada por PGN). Los relojes se leen pero no se muestran. Sin flechas de teclado. `opacity: 0.5` de los botones deshabilitados no sale de `tokens.css`. El test del visor espera porque chessground retira la pieza capturada tras su animación.
 - **T1.2:** wouter con `/` y `/u/:user` (cualquier otra ruta cae en la home); `getLastGame` y `outcome` en `chesscom.ts`; `Home` y `UserPage` en `src/ui/`.
 - **⚠ DEUDA ACEPTADA: previews de Cloudflare apagadas.** El interruptor *Builds for Preview branches* está apagado a propósito; los builds de `main` (producción) funcionan.
   - **Causa:** los builds de rama ejecutan `npx wrangler versions upload` (modelo antiguo de previews) y fallan con «The name in your wrangler.jsonc file (chessanalyzer) must match the name of your Worker». Es el bug [cloudflare/workers-sdk#15682](https://github.com/cloudflare/workers-sdk/issues/15682) (`WRANGLER_CI_MATCH_TAG` de las ramas no corresponde a ningún Worker).
@@ -28,7 +35,7 @@
   - Un fallo de red en la UI se muestra como el error genérico (cualquier excepción); no se distingue 404 de red caída. Mejorar cuando haya mensajes por causa.
   - T1.1 ya activa la cobertura de `src/domain/` (`chesscom.ts` 93,5 % ramas). Cliente: `getArchives` y `getMonthGames`, cola en serie; fixtures escritos a mano, no respuestas reales. Un fallo de red lanza `TypeError`, no `ChessComError`; la UI actual no lo necesita.
   - Heredados: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`.
-- **Siguiente:** T1.4 · `/model opusplan` + plan mode (skills `grilling` y `codebase-design` antes de tocar código); al pasar a implementar, `/effort high` y `/advisor opus`; al cerrar, `/model sonnet` y `/advisor off`.
+- **Siguiente:** T1.5 · `/model sonnet`, `/effort medium` y `/advisor off` (viene de T1.4 con opusplan, high y advisor opus). Skill `grilling` antes de tocar código si hay UI nueva (progreso, barra, lista de evaluaciones) y `frontend-design` para ella.
 
 ## Leyenda
 
@@ -196,7 +203,7 @@
 **Tests:** U del parser (PGN reales, con comentarios y relojes) · C del tablero (renderiza la FEN).
 **Depende de:** T1.2 · **Modelo:** sonnet · medium · advisor no · **Skills:** tdd, frontend-design
 
-### T1.4 · Módulo del motor (interfaz y lite de un hilo) — `pendiente`
+### T1.4 · Módulo del motor (interfaz y lite de un hilo) — `hecha`
 **Objetivo:** Diseñar la interfaz del motor y conectarla a Stockfish 19 lite de un hilo en un Web Worker.
 **RF:**
 - Interfaz `Engine` profunda (diseñada con `codebase-design`): `analyse(fen, opts) → Promise<Eval>` y `stop()`.

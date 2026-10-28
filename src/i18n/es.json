@@ -34,9 +34,10 @@
     "back": "Volver a sus partidas"
   },
   "error": {
+    "invalidUser": "Escribe el nombre de usuario de chess.com, no el nombre real: solo letras, números, «_» y «-», sin espacios.",
     "notFound": "No existe ese usuario en chess.com.",
     "rateLimit": "chess.com recibe demasiadas peticiones. Espera un momento e inténtalo de nuevo.",
-    "offline": "Sin conexión. Comprueba tu red e inténtalo de nuevo.",
+    "offline": "No se pudo conectar con chess.com. Comprueba tu red e inténtalo de nuevo.",
     "timeout": "chess.com tardó demasiado en responder.",
     "http": "No se pudo contactar con chess.com. Inténtalo de nuevo.",
     "shape": "chess.com devolvió datos inesperados.",

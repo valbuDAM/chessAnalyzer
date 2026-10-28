@@ -6,6 +6,7 @@ import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import archives from '../../tests/fixtures/chesscom/archives.json';
 import month from '../../tests/fixtures/chesscom/month.json';
+import monthPgn from '../../tests/fixtures/chesscom/month.pgn?raw';
 import { ChessComError, findGame, getArchives, getMonthGames, getPlayer, normalizeUser, outcome } from './chesscom';
 
 const API = 'https://api.chess.com/pub/player';
@@ -52,18 +53,94 @@ describe('getArchives', () => {
 describe('getMonthGames', () => {
   const url = `${API}/hikaru/games/2024/03`;
 
-  it('returns null, without caching, for a listed month chess.com answers with a 404', async () => {
+  const internalError = () =>
+    HttpResponse.json({ code: 0, message: 'An internal error has occurred.' }, { status: 404 });
+
+  it('returns null, without caching, when chess.com answers both the JSON and the PGN of a listed month with a 404', async () => {
     vi.useFakeTimers({ now: Date.UTC(2024, 5, 1), toFake: ['Date'] });
     let requests = 0;
     server.use(
       http.get(url, () => {
         requests++;
-        return HttpResponse.json({ code: 0, message: 'An internal error has occurred.' }, { status: 404 });
+        return internalError();
+      }),
+      http.get(`${url}/pgn`, () => {
+        requests++;
+        return internalError();
       }),
     );
     expect(await getMonthGames(url)).toBeNull();
     expect(await getMonthGames(url)).toBeNull();
-    expect(requests).toBe(2);
+    expect(requests).toBe(4);
+  });
+
+  it('falls back to the PGN of the month when its JSON answers a 404, and caches it once closed', async () => {
+    vi.useFakeTimers({ now: Date.UTC(2024, 5, 1), toFake: ['Date'] });
+    let requests = 0;
+    server.use(
+      http.get(url, () => internalError()),
+      http.get(`${url}/pgn`, () => {
+        requests++;
+        return HttpResponse.text(monthPgn);
+      }),
+    );
+    const games = await getMonthGames(url);
+    expect(games).toEqual([
+      {
+        url: 'https://www.chess.com/game/live/185802729018',
+        pgn: expect.stringMatching(/^\[Event "Live Chess"\][\s\S]*2\. Qh5 \{\[%clk 0:00:58\.1\]\} 1-0$/),
+        timeClass: 'bullet',
+        endTime: Date.UTC(2024, 2, 1, 11, 39, 46) / 1000,
+        white: { username: 'Toxicmybrother', rating: 3073, result: 'win' },
+        black: { username: 'MagnusCarlsen', rating: 3407, result: 'lose' },
+      },
+      expect.objectContaining({
+        timeClass: 'blitz',
+        white: { username: 'MagnusCarlsen', rating: 3410, result: 'draw' },
+        black: { username: 'Hikaru', rating: 3300, result: 'draw' },
+      }),
+      expect.objectContaining({
+        url: 'https://www.chess.com/game/daily/700000001',
+        timeClass: 'daily',
+        endTime: Date.UTC(2024, 2, 3, 9, 5, 0) / 1000,
+        white: expect.objectContaining({ result: 'lose' }),
+        black: expect.objectContaining({ result: 'win' }),
+      }),
+    ]);
+    expect(await getMonthGames(url)).toEqual(games);
+    expect(requests).toBe(1);
+  });
+
+  it('classifies a PGN time control like chess.com: base plus 40 increments', async () => {
+    const tcs = ['120+1', '179', '180', '599', '600', '1/86400'];
+    const pgn = tcs
+      .map(
+        (tc, i) =>
+          `[Event "Live Chess"]\n[White "a"]\n[Black "b"]\n[Result "*"]\n[WhiteElo "1"]\n[BlackElo "1"]\n[TimeControl "${tc}"]\n[EndDate "2024.03.01"]\n[EndTime "10:00:00"]\n[Link "https://www.chess.com/game/live/${i}"]\n\n1. e4 *`,
+      )
+      .join('\n\n');
+    server.use(
+      http.get(url, () => internalError()),
+      http.get(`${url}/pgn`, () => HttpResponse.text(pgn)),
+    );
+    const games = await getMonthGames(url);
+    expect(games?.map((g) => g.timeClass)).toEqual(['bullet', 'bullet', 'blitz', 'blitz', 'rapid', 'daily']);
+  });
+
+  it('returns no games for an empty PGN month', async () => {
+    server.use(
+      http.get(url, () => internalError()),
+      http.get(`${url}/pgn`, () => HttpResponse.text('')),
+    );
+    expect(await getMonthGames(url)).toEqual([]);
+  });
+
+  it('rejects a PGN game without its headers', async () => {
+    server.use(
+      http.get(url, () => internalError()),
+      http.get(`${url}/pgn`, () => HttpResponse.text('[Event "Live Chess"]\n\n1. e4 *')),
+    );
+    await expect(getMonthGames(url)).rejects.toMatchObject({ kind: 'shape' });
   });
 
   it('maps games to the domain type and skips ones without pgn', async () => {
@@ -192,6 +269,29 @@ describe('getPlayer', () => {
   it('rejects an unexpected body with kind shape', async () => {
     server.use(http.get(`${API}/hikaru`, () => HttpResponse.json({ nope: 1 })));
     await expect(getPlayer('hikaru')).rejects.toMatchObject({ kind: 'shape' });
+  });
+});
+
+describe('invalid usernames', () => {
+  // chess.com answers these without CORS headers, so the browser would report a network failure
+  it.each(['Magnus Carlsen', 'hikaru/x', 'ñandú'])(
+    'rejects %j with kind invalidUser before any request',
+    async (user) => {
+      const fetchMock = vi.fn();
+      vi.stubGlobal('fetch', fetchMock);
+      try {
+        await expect(getPlayer(user)).rejects.toMatchObject({ kind: 'invalidUser' });
+        await expect(getArchives(user)).rejects.toMatchObject({ kind: 'invalidUser' });
+        expect(fetchMock).not.toHaveBeenCalled();
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    },
+  );
+
+  it('accepts underscores, hyphens and digits', async () => {
+    server.use(http.get(`${API}/a_b-9`, () => HttpResponse.json({ username: 'a_b-9' })));
+    await expect(getPlayer('A_b-9')).resolves.toBeUndefined();
   });
 });
 

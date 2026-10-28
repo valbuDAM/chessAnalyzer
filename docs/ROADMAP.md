@@ -1,13 +1,17 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T2.4
+▶ Siguiente tarea: T2.5
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T2.4 en curso (rama `feat/t2-4-filters`), grilling cerrado y sin código aún. Antes, arreglo fuera del roadmap (PR #41): un nombre con espacio («Magnus Carlsen») da `ChessComError` `invalidUser` sin petición, porque chess.com lo responde sin CORS y parecía un fallo de red. Un mes cuyo JSON da 404 se recupera de `{url}/pgn` (`parsePgnGame`, `rated` opcional); si los dos dan 404, sigue saliendo «no disponible» (le pasa al mes en curso de `hikaru`).
-- **Decisiones de T2.4 (grilling):** un valor por filtro (`?tc=blitz&color=black&result=loss`, «Todos» por defecto). El mes es un selector con **todos** los meses de `getArchives`: elegir uno carga solo ese mes (`?month=2025-03`, que sustituye a `?months=N`) y «Cargar mes anterior» sigue hacia atrás desde ahí; «Todos los meses» vuelve a la lista normal. Ritmo, color y resultado filtran los meses cargados, con contador «X de Y partidas». «Quitar filtros» lo quita todo, mes incluido.
+- **Tarea:** T2.4 cerrada (PR #42 y #43, ya mergeados). M2 sigue con T2.5 (pegar PGN) y T2.6 (variantes).
+- **Entregado en T2.4:**
+  - `src/domain/games.ts`: `parseQuery`/`buildQuery` (`?tc=&color=&result=&month=YYYY-MM&months=N`, un valor por filtro, los desconocidos se ignoran) y `filterGames`. `UserPage` guarda ese estado en la URL con `replaceState`; la tarjeta y `GamePage` lo devuelven entero al volver.
+  - Selector de mes con todos los meses de `getArchives`: elegir uno carga solo ese mes y «Cargar mes anterior» sigue hacia atrás desde él. Un `?month=` que el usuario no jugó se descarta. `Filters` va montado aunque cargue otro mes (`archives` aparte del `state`) para no perder el foco.
+  - Contador «X de Y partidas» sobre los meses cargados; sin resultados, estado vacío y «Quitar filtros» (quita también el mes). Primer test de componente de `UserPage` y dos e2e.
+- **Límites de T2.4:** el filtro solo ve los meses cargados (no busca en los demás). Los selectores son `<select>` nativos con estilo mínimo; no se ha revisado con axe el tema claro ni su aspecto en móvil real. Con filtros activos «Cargar mes anterior» sigue visible aunque el mes cargado no tenga coincidencias.
 - **Entregado en T2.3:**
   - `/u/:user` (`UserPage`, con `key={user}`) es la lista: carga el mes más reciente y «Cargar mes anterior» añade el siguiente hacia atrás. Lleva el foco al encabezado del mes nuevo y guarda la cuenta en `?months=N` (`history.replaceState`), que se relee al entrar. La tarjeta lleva el mismo `?months` en su enlace y `GamePage` lo devuelve en «Volver a sus partidas».
   - `src/domain/games.ts` (puro): `gameId` (último segmento de la URL), `moveCount` (regex sobre el PGN; `shortcut:` con variantes), `playerView` (color, rival y resultado desde el usuario, sin distinguir mayúsculas), `monthStart` (UTC desde `…/YYYY/MM`) y `addMonth` (más nueva primero, sin repetir `url` de meses anteriores). `formatMonth` en `src/i18n/format.ts`.
@@ -66,7 +70,7 @@
   - Si reaparecen sandboxes en `.stryker-tmp`, quitar primero los junctions con `rmdir` y después `rm -rf`.
   - Pasar a `@stryker-mutator/vitest-runner` si `mutate` se vuelve lento.
     - T1.1 ya activa la cobertura de `src/domain/` (`chesscom.ts` 93,5 % ramas). Cliente: `getArchives` y `getMonthGames`, cola en serie; fixtures escritos a mano, no respuestas reales.  - Heredados: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`.
-- **Siguiente:** T2.4 · `/model sonnet`, `/advisor off`, `/effort low`. Los filtros van en la query string junto a `?months=N`: la tarjeta ya pasa su `search` al enlace de la partida, así que hay que llevar ahí todos los parámetros, no solo `months`. Filtrar sobre `UserPage` (`state.months`) con una función pura en `src/domain/games.ts` (`playerView` ya da color y resultado). Grilling hecho: ver «Decisiones de T2.4» arriba.
+- **Siguiente:** T2.5 · `/model sonnet`, `/advisor off`, `/effort low`. Pegar PGN: validar con chessops y dar «Jugada ilegal en N. …»; reutiliza `parseGamePgn` de `src/domain/pgn.ts`.
 
 ## Leyenda
 
@@ -308,7 +312,7 @@
 **Tests:** C de la tarjeta y la lista · E del flujo.
 **Depende de:** T2.2 · **Modelo:** sonnet · medium · advisor no · **Skills:** frontend-design
 
-### T2.4 · Filtros en cliente — `pendiente`
+### T2.4 · Filtros en cliente — `hecha`
 **Objetivo:** Filtrar por ritmo (bullet/blitz/rápida/diaria), color, resultado y mes.
 **Aceptación:**
 - Dados los filtros «blitz + negras + derrota», cuando los aplico, entonces solo veo esas partidas y un contador.

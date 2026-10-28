@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { parseGamePgn } from './pgn';
+import { PgnError, parseGamePgn, readPgn } from './pgn';
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -58,4 +58,63 @@ describe('parseGamePgn', () => {
   it('throws on an illegal move', () => {
     expect(() => parseGamePgn('1. e4 e4 *')).toThrow(/e4/);
   });
+
+  it('reports who moved and the move number of an illegal move', () => {
+    expect(problem(() => parseGamePgn('1. e4 e4 *'))).toEqual({ kind: 'illegal', number: 1, black: true, san: 'e4' });
+    expect(problem(() => parseGamePgn('1. e4 e5 2. Ke3 e4 3. Qh5 Nc6 4. Qxh7 *'))).toEqual({
+      kind: 'illegal',
+      number: 2,
+      black: false,
+      san: 'Ke3',
+    });
+  });
+
+  it('counts from the FEN when the game does not start at move 1', () => {
+    const fen = '4k3/8/8/8/8/8/8/4K2R b K - 0 20';
+    expect(problem(() => parseGamePgn(`[SetUp "1"]\n[FEN "${fen}"]\n\n20... Ke7 21. Ra5 *`))).toMatchObject({
+      number: 21,
+      black: false,
+      san: 'Ra5',
+    });
+  });
+
+  it('reports a text with no game at all', () => {
+    expect(problem(() => parseGamePgn(''))).toEqual({ kind: 'empty' });
+  });
+
+  it('reports an unusable starting position', () => {
+    expect(problem(() => parseGamePgn('[SetUp "1"]\n[FEN "nonsense"]\n\n1. e4 *'))).toEqual({ kind: 'setup' });
+  });
 });
+
+describe('readPgn', () => {
+  const two = `[White "a"]\n[Black "b"]\n[Result "1-0"]\n[Date "2024.03.01"]\n\n1. e4 {[%clk 0:03:00]} e5 1-0\n\n[White "c"]\n[Black "d"]\n\n1. d4 *`;
+
+  it('lists every game with its players, result and date', () => {
+    const games = readPgn(two);
+    expect(games.map(({ white, black, result, date }) => ({ white, black, result, date }))).toEqual([
+      { white: 'a', black: 'b', result: '1-0', date: '2024.03.01' },
+      { white: 'c', black: 'd', result: '*', date: null },
+    ]);
+  });
+
+  it('gives each game its own PGN, comments included', () => {
+    const [first, second] = readPgn(two);
+    expect(parseGamePgn(first?.pgn ?? '').map((p) => p.clock)).toEqual([null, 180, null]);
+    expect(parseGamePgn(second?.pgn ?? '')).toHaveLength(2);
+  });
+
+  it.each(['', '   \n', '[White "a"]\n\n*'])('says there is no game in %j', (text) => {
+    expect(problem(() => readPgn(text))).toEqual({ kind: 'empty' });
+  });
+});
+
+function problem(run: () => unknown) {
+  try {
+    run();
+  } catch (e) {
+    if (e instanceof PgnError) return e.problem;
+    throw e;
+  }
+  throw new Error('did not throw');
+}

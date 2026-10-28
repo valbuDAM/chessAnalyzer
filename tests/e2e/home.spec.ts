@@ -147,3 +147,41 @@ test('picking a month loads only that month and keeps going backwards from it', 
   await expect(page.getByRole('heading', { name: 'diciembre de 2023' })).toBeVisible();
   await expect(page).toHaveURL('/u/hikaru?month=2024-01&months=2');
 });
+
+const GOOD_PGN = '[White "ana"]\n[Black "luis"]\n\n1. e4 e5 2. Nf3 Nc6 *';
+const BAD_PGN = '1. e4 e5 2. Nf3 Nc6 3. Ke3 *';
+
+test('a pasted PGN with an illegal move shows where and keeps the board closed', async ({
+  page,
+  expectNoSeriousA11yViolations,
+}) => {
+  await page.goto('/');
+  const area = page.getByLabel('O pega un PGN');
+  await area.fill(BAD_PGN);
+  await page.getByRole('button', { name: 'Analizar', exact: true }).click();
+  await expect(page.getByRole('alert')).toHaveText('Jugada ilegal en 3. Ke3');
+  await expect(page).toHaveURL('/');
+  await expectNoSeriousA11yViolations();
+});
+
+test('a pasted game with several games lets you pick one, and survives a reload', async ({
+  page,
+  expectNoSeriousA11yViolations,
+}) => {
+  await page.goto('/');
+  await page.getByLabel('O pega un PGN').fill(`${BAD_PGN}\n\n${GOOD_PGN}`);
+  await page.getByRole('button', { name: 'Analizar', exact: true }).click();
+  await page.getByRole('radio', { name: /ana – luis/ }).check();
+  await page.getByRole('button', { name: 'Analizar esta partida' }).click();
+  await expect(page).toHaveURL('/pgn');
+  await expect(page.getByRole('heading', { name: 'ana contra luis' })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Tablero de la partida' })).toHaveClass(/orientation-white/);
+  await expectNoSeriousA11yViolations();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'ana contra luis' })).toBeVisible();
+});
+
+test('/pgn with nothing pasted goes back home', async ({ page }) => {
+  await page.goto('/pgn');
+  await expect(page).toHaveURL('/');
+});

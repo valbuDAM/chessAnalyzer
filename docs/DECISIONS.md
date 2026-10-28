@@ -233,3 +233,11 @@ Formato breve: **Contexto · Decisión · Descartado · Consecuencias**. Todas s
   - Progreso con `<progress>` nativo: un `role="status"` leería cada posición.
   - El e2e usa `vite preview` local con la API de chess.com simulada y el motor real; el criterio «en la previsualización desplegada» queda pendiente mientras las previews de Cloudflare sigan apagadas.
 - **Descartado:** botón de cancelar, selector de profundidad, lista interactiva que salta a la jugada, parámetro de profundidad en la URL para el e2e.
+
+### ADR-027 · Partidas no estándar (T2.6)
+- **Fecha:** 2026-10-28.
+- **Decisión:**
+  - Lista blanca: es estándar si `rules` (API) o `Variant` (PGN) falta o vale `chess`/`standard`, sin distinguir mayúsculas. Todo lo demás, Chess960 incluido, es «No compatible». `isStandard` en `src/domain/pgn.ts`.
+  - `Game.variant` guarda `rules` o la cabecera `Variant`. Clave de caché `games:v2:`.
+  - `parseGamePgn` lanza `PgnError({ kind: 'variant', name })` y ya no trata el enroque 960. La tarjeta lleva la etiqueta y enlaza igualmente; la página de la partida solo explica, sin tablero ni botón de analizar. El PGN pegado se rechaza en el formulario.
+- **Descartado:** mostrar el tablero sin análisis (exige enroque 960), soporte real de Chess960 (el motor sigue con el `shortcut:` de reglas estándar), lista negra de variantes.

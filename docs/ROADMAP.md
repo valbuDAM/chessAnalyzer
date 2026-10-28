@@ -1,18 +1,23 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T2.6
+▶ Siguiente tarea: T3.1
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T2.5 cerrada (PR #45, ya mergeado). M2 sigue solo con T2.6 (variantes).
+- **Tarea:** T2.6 cerrada (PR #47, ya mergeado). M2 completo salvo su checklist de cierre.
+- **Entregado en T2.6** (ADR-027):
+  - `isStandard(variant)` en `src/domain/pgn.ts` (lista blanca) y `Game.variant` (`rules` de la API o cabecera `Variant` del PGN). Clave de caché `games:v2:<url>`.
+  - `parseGamePgn` lanza `PgnError({ kind: 'variant', name })`; la rama Chess960 se borró. `PastePgn` lo muestra en `role="alert"`.
+  - `GameCard`: «No compatible» en la línea de meta, sigue enlazando. `GamePage`: explicación en `role="alert"` en vez de `GameViewer`. `variantName` traduce `chess960`, `crazyhouse`, `bughouse`, `kingofthehill` y `threecheck`; el resto muestra el nombre tal cual.
+- **Límites de T2.6:** los nombres de `rules`/`Variant` de chess.com son de memoria, no de respuestas reales. No se ha comprobado el contraste del texto rojo «No compatible» en la lista (axe solo pasa por la página de la partida) ni en tema claro o móvil real. Un `[Variant ""]` da un mensaje con el nombre vacío.
+- **Tarea anterior:** T2.5 cerrada (PR #45, ya mergeado).
 - **Entregado en T2.5:**
   - `src/domain/pgn.ts`: `PgnError(problem)` con `PgnProblem = empty | setup | illegal {number, black, san}` (el número sale de `pos.fullmoves`, así que cuenta bien desde una FEN) y `readPgn(text)` → `PgnGame[]` (`pgn` de cada partida con `makePgn`, jugadores, resultado, fecha). Solo cuenta las partidas con jugadas. `parseGamePgn` lanza `PgnError`.
   - `PastePgn` (en `Home`): un único formulario. Con una partida la abre; con varias muestra radios y «Analizar esta partida». Solo valida la elegida. Error en `role="alert"` bajo el área de texto: «Jugada ilegal en 12. Qe5» / «12… Nf6».
   - `/pgn` (`PastedGamePage`) lee la partida de una variable de módulo o de `sessionStorage` (por si el navegador bloquea el almacenamiento); sin nada, vuelve a `/`. Blancas siempre abajo.
-- **Límites de T2.5:** sin subir ni arrastrar `.pgn`; lista sin paginar (`shortcut:`); con almacenamiento bloqueado la partida se pierde al recargar; el error no dice de qué partida es; no se ha visto en móvil real ni en tema claro. `parseGamePgn` ya trata `Variant "Chess960"`, así que T2.6 debe decidir qué hace con eso.
-- **Tarea anterior:** T2.4 cerrada (PR #42 y #43).
+- **Límites de T2.5:** sin subir ni arrastrar `.pgn`; lista sin paginar (`shortcut:`); con almacenamiento bloqueado la partida se pierde al recargar; el error no dice de qué partida es; no se ha visto en móvil real ni en tema claro.- **Tarea anterior:** T2.4 cerrada (PR #42 y #43).
 - **Entregado en T2.4:**
   - `src/domain/games.ts`: `parseQuery`/`buildQuery` (`?tc=&color=&result=&month=YYYY-MM&months=N`, un valor por filtro, los desconocidos se ignoran) y `filterGames`. `UserPage` guarda ese estado en la URL con `replaceState`; la tarjeta y `GamePage` lo devuelven entero al volver.
   - Selector de mes con todos los meses de `getArchives`: elegir uno carga solo ese mes y «Cargar mes anterior» sigue hacia atrás desde él. Un `?month=` que el usuario no jugó se descarta. `Filters` va montado aunque cargue otro mes (`archives` aparte del `state`) para no perder el foco.
@@ -28,7 +33,7 @@
   - La home dice «Ver partidas». `.page a` pasa a `.page > a` para que las tarjetas no hereden el latón.
 - **Límites de T2.3:** un error de red al cargar los N meses iniciales tumba toda la página (el reintento recarga todo). Un enlace directo a una partida de un mes con 404 dice «no hay ninguna partida» en vez de «no disponible». No se ha comprobado con axe el tema claro de las tarjetas, ni la barra girada en un navegador real (solo su CSS). Un solo PR de 428 líneas, unas 150 de CSS, aceptado por la usuaria.
 - **Entregado en T2.2:**
-  - `getMonthGames(url)` en `src/domain/chesscom.ts` guarda el `Game[]` ya validado de los meses cerrados en IndexedDB (`idb-keyval`, clave `games:v1:<url>`) y lo devuelve sin red la siguiente vez. Un mes está cerrado cuando han pasado 24 h desde el inicio del mes siguiente en UTC, para dar margen a las partidas indexadas tarde. El mes en curso no cambia: lo cubre la caché HTTP del navegador (ADR).
+  - `getMonthGames(url)` en `src/domain/chesscom.ts` guarda el `Game[]` ya validado de los meses cerrados en IndexedDB (`idb-keyval`, clave `games:v1:<url>`, hoy `v2`) y lo devuelve sin red la siguiente vez. Un mes está cerrado cuando han pasado 24 h desde el inicio del mes siguiente en UTC, para dar margen a las partidas indexadas tarde. El mes en curso no cambia: lo cubre la caché HTTP del navegador (ADR).
   - Si IndexedDB falla al leer o escribir (cuota llena, bloqueado, no disponible), el error se ignora y se descarga. La lectura de la caché va fuera de la cola en serie.
   - Tests: unitarios con `fake-indexeddb` (una sola descarga, límite exacto de 24 h, fallos de IDB, con `get`/`set` espiados por `vi.mock`) y e2e en `home.spec.ts` que recarga y cuenta 1 petición. Comprobado también en el navegador con la API real: un mes cerrado de `erik` hace 0 peticiones tras recargar.
 - **Límites de T2.2:** las claves de versiones antiguas no se borran nunca (`shortcut:`). Si el reloj del cliente va más de 24 h adelantado, el mes en curso se guardaría incompleto (riesgo aceptado). Los datos leídos de IDB solo se comprueban con `Array.isArray`. Al cambiar el tipo `Game`, hay que subir la versión de la clave a mano.
@@ -76,7 +81,7 @@
   - Si reaparecen sandboxes en `.stryker-tmp`, quitar primero los junctions con `rmdir` y después `rm -rf`.
   - Pasar a `@stryker-mutator/vitest-runner` si `mutate` se vuelve lento.
     - T1.1 ya activa la cobertura de `src/domain/` (`chesscom.ts` 93,5 % ramas). Cliente: `getArchives` y `getMonthGames`, cola en serie; fixtures escritos a mano, no respuestas reales.  - Heredados: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`.
-- **Siguiente:** T2.6 · mismo modelo y esfuerzo (`sonnet`, `low`, advisor off). Detectar variantes y avisar; empieza con grilling (qué hacer con Chess960, que `parseGamePgn` ya admite).
+- **Siguiente:** cierre de M2 (`ponytail-audit`, `ponytail-debt`, `npm run mutate`, e2e Firefox/WebKit, `/usage`) y después T3.1 (`sonnet`, `medium`, advisor off, frontend-design).
 
 ## Leyenda
 
@@ -338,7 +343,7 @@
 **Tests:** U de la validación · C · E.
 **Depende de:** T1.3 · **Modelo:** sonnet · low · advisor no · **Skills:** frontend-design
 
-### T2.6 · Partidas no estándar — `pendiente`
+### T2.6 · Partidas no estándar — `hecha` (PR #47)
 **Objetivo:** Detectar las variantes y avisar.
 **RF:**
 - Cabeceras `Variant` y `SetUp`/`FEN`, y `rules` de la API.

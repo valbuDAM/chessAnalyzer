@@ -34,3 +34,52 @@ export function addMonth(months: Month[], url: string, games: Game[] | null): Mo
   const fresh = games?.filter((g) => !seen.has(g.url)).sort((a, b) => b.endTime - a.endTime);
   return [...months, { url, games: fresh ?? null }];
 }
+
+export const TIME_CLASSES = ['bullet', 'blitz', 'rapid', 'daily'] as const;
+export const COLORS = ['white', 'black'] as const;
+export const RESULTS = ['win', 'loss', 'draw'] as const;
+
+/** `''` means no filter. `month` is `YYYY-MM`, and `months` how many months are loaded from it. */
+export type Query = {
+  timeClass: '' | (typeof TIME_CLASSES)[number];
+  color: '' | (typeof COLORS)[number];
+  result: '' | Result;
+  month: string;
+  months: number;
+};
+
+const pick = <T extends string>(options: readonly T[], value: string | null) => options.find((o) => o === value) ?? '';
+
+export function parseQuery(search: string): Query {
+  const p = new URLSearchParams(search);
+  const month = p.get('month') ?? '';
+  return {
+    timeClass: pick(TIME_CLASSES, p.get('tc')),
+    color: pick(COLORS, p.get('color')),
+    result: pick(RESULTS, p.get('result')),
+    month: /^\d{4}-(0[1-9]|1[0-2])$/.test(month) ? month : '',
+    months: Math.max(1, Math.floor(Number(p.get('months'))) || 1),
+  };
+}
+
+export function buildQuery(q: Query): string {
+  const p = new URLSearchParams();
+  if (q.timeClass) p.set('tc', q.timeClass);
+  if (q.color) p.set('color', q.color);
+  if (q.result) p.set('result', q.result);
+  if (q.month) p.set('month', q.month);
+  if (q.months > 1) p.set('months', String(q.months));
+  const s = p.toString();
+  return s && `?${s}`;
+}
+
+export function filterGames(games: Game[], user: string, q: Pick<Query, 'timeClass' | 'color' | 'result'>): Game[] {
+  return games.filter((g) => {
+    const view = playerView(g, user);
+    return (
+      (!q.timeClass || g.timeClass === q.timeClass) &&
+      (!q.color || view.color === q.color) &&
+      (!q.result || view.result === q.result)
+    );
+  });
+}

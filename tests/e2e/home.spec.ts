@@ -116,7 +116,6 @@ test('filters narrow the list, show an empty state, and survive a trip to a game
   expectNoSeriousA11yViolations,
 }) => {
   await page.goto('/u/hikaru');
-  // hikaru: game 1 is blitz as white and a win, game 2 as black and a win; both blitz in the fixture except the first.
   await page.getByLabel('Color').selectOption('black');
   await expect(page).toHaveURL('/u/hikaru?color=black');
   await expect(cards(page)).toHaveCount(1);
@@ -139,7 +138,9 @@ test('filters narrow the list, show an empty state, and survive a trip to a game
 
 test('picking a month loads only that month and keeps going backwards from it', async ({ page }) => {
   await page.goto('/u/hikaru');
+  await page.getByLabel('Mes').focus(); // selectOption alone does not focus
   await page.getByLabel('Mes').selectOption('2024-01');
+  await expect(page.getByLabel('Mes')).toBeFocused();
   await expect(page).toHaveURL('/u/hikaru?month=2024-01');
   await expect(page.getByRole('heading', { name: 'enero de 2024' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'marzo de 2024' })).toHaveCount(0);

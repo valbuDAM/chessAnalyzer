@@ -1,6 +1,18 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { PgnError, parseGamePgn, readPgn } from './pgn';
+import { isStandard, PgnError, parseGamePgn, readPgn } from './pgn';
+
+describe('isStandard', () => {
+  it('is true when the variant is missing or a standard name, whatever the case', () => {
+    for (const v of [undefined, 'chess', 'Chess', 'Standard']) expect(isStandard(v)).toBe(true);
+  });
+
+  it('is false for anything else', () => {
+    for (const v of ['chess960', 'Chess960', 'crazyhouse', 'bughouse', 'kingofthehill', 'threecheck', '']) {
+      expect(isStandard(v)).toBe(false);
+    }
+  });
+});
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -42,10 +54,18 @@ describe('parseGamePgn', () => {
     expect(parseGamePgn(`[SetUp "1"]\n[FEN "${fen}"]\n\n1. O-O-O *`)[1]).toMatchObject({ uci: 'e1c1' });
   });
 
-  it('keeps king-takes-rook for Chess960, as engines expect in that mode', () => {
+  it('refuses a variant, naming it', () => {
     const fen = '4k3/8/8/8/8/8/8/1K3R2 w F - 0 1';
     const pgn = `[Variant "Chess960"]\n[SetUp "1"]\n[FEN "${fen}"]\n\n1. O-O *`;
-    expect(parseGamePgn(pgn)[1]).toMatchObject({ uci: 'b1f1' });
+    expect(() => parseGamePgn(pgn)).toThrowError(
+      expect.objectContaining({ problem: { kind: 'variant', name: 'Chess960' } }),
+    );
+  });
+
+  it('accepts the standard names of the Variant header', () => {
+    for (const name of ['Standard', 'chess', 'CHESS']) {
+      expect(parseGamePgn(`[Variant "${name}"]\n\n1. e4 *`)).toHaveLength(2);
+    }
   });
 
   it('starts from the FEN header when the game has one', () => {

@@ -11,6 +11,8 @@ export type Game = {
   timeClass: string;
   /** Missing on months recovered from their PGN, which does not say. */
   rated?: boolean;
+  /** `rules` of the API or the PGN's `Variant`; undefined when the PGN does not say (see `isStandard`). */
+  variant?: string | undefined;
   endTime: number;
   white: Side;
   black: Side;
@@ -124,6 +126,7 @@ function parseGame(v: unknown): Game | null {
     pgn: v.pgn,
     timeClass: v.time_class,
     rated: v.rated,
+    variant: typeof v.rules === 'string' ? v.rules : undefined,
     endTime: v.end_time,
     white: parseSide(v.white),
     black: parseSide(v.black),
@@ -158,6 +161,7 @@ function parsePgnGame(pgn: string): Game {
     url,
     pgn,
     timeClass: timeClassOf(timeControl),
+    variant: tag('Variant'),
     endTime: endMs / 1000,
     white: { username: white, rating: whiteElo, result: sideResult('1-0') },
     black: { username: black, rating: blackElo, result: sideResult('0-1') },
@@ -186,7 +190,7 @@ function isClosedMonth(url: string): boolean {
 
 // Bump the version whenever Game changes shape.
 // shortcut: older versions are never deleted, add a cleanup if storage use ever matters.
-const cacheKey = (url: string) => `games:v1:${url}`;
+const cacheKey = (url: string) => `games:v2:${url}`;
 
 /**
  * Closed months come from IndexedDB once stored; the current one relies on the browser's HTTP cache.

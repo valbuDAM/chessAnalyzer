@@ -16,8 +16,14 @@ export type Position = {
 export type PgnProblem =
   | { kind: 'empty' }
   | { kind: 'setup' }
+  /** A game of a variant (Chess960, Crazyhouse…) that standard Stockfish cannot analyse. */
+  | { kind: 'variant'; name: string }
   /** `black`: the move belongs to Black, so it is written «12… Nf6». */
   | { kind: 'illegal'; number: number; black: boolean; san: string };
+
+/** `rules` of the chess.com API or `Variant` of a PGN; only standard chess (or none) can be analysed. */
+export const isStandard = (variant?: string) =>
+  variant === undefined || ['chess', 'standard'].includes(variant.toLowerCase());
 
 /** A PGN that cannot be analysed; `problem` is what the UI turns into text. */
 export class PgnError extends Error {
@@ -59,17 +65,18 @@ export function readPgn(text: string): PgnGame[] {
 export function parseGamePgn(pgn: string): Position[] {
   const [game] = parsePgn(pgn);
   if (!game) throw new PgnError({ kind: 'empty' });
+  const variant = game.headers.get('Variant');
+  if (!isStandard(variant)) throw new PgnError({ kind: 'variant', name: variant as string });
   const start = startingPosition(game.headers);
   if (start.isErr) throw new PgnError({ kind: 'setup' });
   const pos = start.unwrap();
-  const chess960 = game.headers.get('Variant')?.toLowerCase() === 'chess960';
   const positions: Position[] = [{ fen: makeFen(pos.toSetup()), san: null, uci: null, clock: null }];
   for (const node of game.moves.mainline()) {
     const move = parseSan(pos, node.san);
     if (!move)
       throw new PgnError({ kind: 'illegal', number: pos.fullmoves, black: pos.turn === 'black', san: node.san });
-    // chessops writes castling as king-takes-rook; standard engines expect the king's real target (960 keeps it).
-    const side = chess960 ? undefined : castlingSide(pos, move);
+    // chessops writes castling as king-takes-rook; standard engines expect the king's real target.
+    const side = castlingSide(pos, move);
     const uci = makeUci(side && 'from' in move ? { ...move, to: kingCastlesTo(pos.turn, side) } : move);
     pos.play(move);
     positions.push({

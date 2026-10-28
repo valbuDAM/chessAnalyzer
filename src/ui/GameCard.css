@@ -71,6 +71,10 @@
   font-size: var(--text-sm);
 }
 
+.game-card-unsupported {
+  color: var(--color-label-mistake);
+}
+
 .game-card-date {
   grid-area: date;
   font-size: var(--text-sm);

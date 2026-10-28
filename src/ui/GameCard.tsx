@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'wouter';
 import type { Game } from '../domain/chesscom.ts';
 import { gameId, moveCount, playerView } from '../domain/games.ts';
+import { isStandard } from '../domain/pgn.ts';
 import { formatDate, formatNumber } from '../i18n/format.ts';
 import './GameCard.css';
 
@@ -26,6 +27,7 @@ export function GameCard({ game, user, search = '' }: { game: Game; user: string
         <span className="game-card-chip" data-color={color} aria-hidden="true" />
         {t(`card.timeClass.${game.timeClass}`, { defaultValue: game.timeClass })}, {t(`card.color.${color}`)},{' '}
         {t('card.moves', { count: moveCount(game.pgn) })}
+        {!isStandard(game.variant) && <strong className="game-card-unsupported"> · {t('card.unsupported')}</strong>}
       </span>{' '}
       <time className="game-card-date" dateTime={new Date(game.endTime * 1000).toISOString()}>
         {formatDate(game.endTime * 1000)}

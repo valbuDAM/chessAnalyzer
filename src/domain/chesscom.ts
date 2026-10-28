@@ -9,13 +9,14 @@ export type Game = {
   url: string;
   pgn: string;
   timeClass: string;
-  rated: boolean;
+  /** Missing on months recovered from their PGN, which does not say. */
+  rated?: boolean;
   endTime: number;
   white: Side;
   black: Side;
 };
 
-export type ErrorKind = 'notFound' | 'rateLimit' | 'offline' | 'timeout' | 'http' | 'shape';
+export type ErrorKind = 'invalidUser' | 'notFound' | 'rateLimit' | 'offline' | 'timeout' | 'http' | 'shape';
 
 export class ChessComError extends Error {
   override name = 'ChessComError';
@@ -63,22 +64,38 @@ async function fetchOk(url: string): Promise<Response> {
   }
 }
 
-async function getJson(url: string): Promise<unknown> {
+async function getBody<T>(url: string, read: (res: Response) => Promise<T>): Promise<T> {
   return serial(async () => {
     const res = await fetchOk(url);
     // read the body inside the slot, or the next request overlaps this download
-    return res.json().catch((e) => {
+    return read(res).catch((e) => {
       throw e instanceof SyntaxError ? new ChessComError('Body is not JSON') : transportError(e);
     });
   });
 }
 
+const getJson = (url: string): Promise<unknown> => getBody(url, (res) => res.json());
+
+/** undefined when chess.com answers a 404. */
+const unlessNotFound = <T>(request: Promise<T>): Promise<T | undefined> =>
+  request.catch((e) => {
+    if (e instanceof ChessComError && e.kind === 'notFound') return undefined;
+    throw e;
+  });
+
 /** chess.com usernames are case-insensitive. */
 export const normalizeUser = (user: string) => user.trim().toLowerCase();
 
+// chess.com answers other characters (a real name with a space, say) without CORS headers, which looks like a network failure.
+function playerUrl(user: string): string {
+  const name = normalizeUser(user);
+  if (!/^[a-z0-9_-]+$/.test(name)) throw new ChessComError('Not a chess.com username', 'invalidUser');
+  return API + name;
+}
+
 /** Resolves if the player exists; otherwise throws a ChessComError (kind notFound for an unknown user). */
 export async function getPlayer(user: string): Promise<void> {
-  const body = await getJson(`${API}${encodeURIComponent(normalizeUser(user))}`);
+  const body = await getJson(playerUrl(user));
   if (!isRecord(body) || typeof body.username !== 'string') throw new ChessComError('Unexpected profile shape');
 }
 
@@ -113,9 +130,45 @@ function parseGame(v: unknown): Game | null {
   };
 }
 
+/** chess.com's rule: the base time plus 40 increments; daily controls read `1/<seconds per move>`. */
+function timeClassOf(timeControl: string): string {
+  if (timeControl.includes('/')) return 'daily';
+  const [base = 0, increment = 0] = timeControl.split('+').map(Number);
+  const seconds = base + 40 * increment;
+  return seconds < 180 ? 'bullet' : seconds < 600 ? 'blitz' : 'rapid';
+}
+
+function parsePgnGame(pgn: string): Game {
+  const tag = (name: string) => new RegExp(`^\\[${name} "(.*)"\\]$`, 'm').exec(pgn)?.[1];
+  const url = tag('Link');
+  const white = tag('White');
+  const black = tag('Black');
+  const result = tag('Result');
+  const timeControl = tag('TimeControl');
+  const whiteElo = Number(tag('WhiteElo'));
+  const blackElo = Number(tag('BlackElo'));
+  // EndDate reads 2024.03.01 and EndTime may drop the hour's leading zero
+  const endMs = Date.parse(`${tag('EndDate')?.replaceAll('.', '-')}T${tag('EndTime')?.padStart(8, '0')}Z`);
+  if (!url || !white || !black || !result || !timeControl || Number.isNaN(whiteElo + blackElo + endMs)) {
+    throw new ChessComError('Unexpected PGN game');
+  }
+  // only chess.com's `win` marker matters downstream (see playerView)
+  const sideResult = (wins: string) => (result === wins ? 'win' : result === '1/2-1/2' ? 'draw' : 'lose');
+  return {
+    url,
+    pgn,
+    timeClass: timeClassOf(timeControl),
+    endTime: endMs / 1000,
+    white: { username: white, rating: whiteElo, result: sideResult('1-0') },
+    black: { username: black, rating: blackElo, result: sideResult('0-1') },
+  };
+}
+
+const splitPgn = (text: string) => (text.trim() ? text.trim().split(/\n\s*\n(?=\[Event )/) : []);
+
 /** Monthly archive URLs, oldest first (the URLs end in YYYY/MM, so they sort as strings). */
 export async function getArchives(user: string): Promise<string[]> {
-  const body = await getJson(`${API}${encodeURIComponent(normalizeUser(user))}/games/archives`);
+  const body = await getJson(`${playerUrl(user)}/games/archives`);
   if (!isRecord(body) || !Array.isArray(body.archives) || !body.archives.every((a) => typeof a === 'string')) {
     throw new ChessComError('Unexpected archives shape');
   }
@@ -137,7 +190,8 @@ const cacheKey = (url: string) => `games:v1:${url}`;
 
 /**
  * Closed months come from IndexedDB once stored; the current one relies on the browser's HTTP cache.
- * null when chess.com lists the month but answers it with a 404 (seen on huge months), which says nothing about the user.
+ * chess.com answers some huge months with a 404 on the JSON while still serving their PGN, so that is the fallback.
+ * null when both answer a 404, which says nothing about the user.
  */
 export async function getMonthGames(url: string): Promise<Game[] | null> {
   if (!url.startsWith(API)) throw new ChessComError('Not a chess.com player API URL');
@@ -149,21 +203,23 @@ export async function getMonthGames(url: string): Promise<Game[] | null> {
       .catch(() => undefined);
     if (Array.isArray(cached)) return cached;
   }
-  let body: unknown;
-  try {
-    body = await getJson(url);
-  } catch (e) {
-    if (e instanceof ChessComError && e.kind === 'notFound') return null;
-    throw e;
-  }
-  if (!isRecord(body) || !Array.isArray(body.games)) throw new ChessComError('Unexpected month shape');
-  const games = body.games.map(parseGame).filter((g): g is Game => g !== null);
-  if (closed) {
+  const games = await downloadMonth(url);
+  if (games && closed) {
     await Promise.resolve()
       .then(() => set(cacheKey(url), games))
       .catch(() => {});
   }
   return games;
+}
+
+async function downloadMonth(url: string): Promise<Game[] | null> {
+  const body = await unlessNotFound(getJson(url));
+  if (body === undefined) {
+    const pgn = await unlessNotFound(getBody(`${url}/pgn`, (res) => res.text()));
+    return pgn === undefined ? null : splitPgn(pgn).map(parsePgnGame);
+  }
+  if (!isRecord(body) || !Array.isArray(body.games)) throw new ChessComError('Unexpected month shape');
+  return body.games.map(parseGame).filter((g): g is Game => g !== null);
 }
 
 /** The game with that id, looking back month by month from the newest; null if no month has it. */

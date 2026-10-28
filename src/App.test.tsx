@@ -98,7 +98,7 @@ it('keeps the list and offers a retry when an earlier month fails', async () => 
   const more = await screen.findByRole('button', { name: 'Cargar mes anterior' });
   vi.mocked(getMonthGames).mockRejectedValueOnce(new ChessComError('x', 'offline'));
   await userEvent.click(more);
-  expect(await screen.findByRole('alert')).toHaveTextContent('Sin conexión');
+  expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo conectar con chess.com');
   expect(opponents()).toEqual(['Rival5']);
   await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
   expect(await screen.findByRole('heading', { name: 'febrero de 2024' })).toBeInTheDocument();
@@ -144,11 +144,19 @@ it('keeps the typed text and says the user does not exist', async () => {
   expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
 });
 
+it('asks for the chess.com username, without a retry, when given a real name', async () => {
+  vi.mocked(getPlayer).mockRejectedValueOnce(new ChessComError('x', 'invalidUser'));
+  render(<App />);
+  await userEvent.type(screen.getByLabelText('Usuario de chess.com'), 'Magnus Carlsen{Enter}');
+  expect(await screen.findByRole('alert')).toHaveTextContent('no el nombre real');
+  expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+});
+
 it('offers a retry when offline and continues once it works', async () => {
   vi.mocked(getPlayer).mockRejectedValueOnce(new ChessComError('x', 'offline'));
   render(<App />);
   await userEvent.type(screen.getByLabelText('Usuario de chess.com'), 'hikaru{Enter}');
-  expect(await screen.findByRole('alert')).toHaveTextContent('Sin conexión');
+  expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo conectar con chess.com');
   await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
   await waitFor(() => expect(window.location.pathname).toBe('/u/hikaru'));
 });

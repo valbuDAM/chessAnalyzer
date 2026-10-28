@@ -34,9 +34,16 @@ export function UserPage({ user }: { user: string }) {
   const [state, setState] = useState<State>({ status: 'loading' });
   const [more, setMore] = useState<More>({ status: 'idle' });
   const [attempt, setAttempt] = useState(0);
+  // Kept apart from `state` so the filters stay mounted (and focused) while another month loads.
+  const [archives, setArchives] = useState<string[]>([]);
   const added = useRef(false);
   // Filters, month and loaded months live in the query string, so the list survives a trip to a game and back.
   const [query, setQuery] = useState(() => parseQuery(window.location.search));
+
+  const change = (next: Query) => {
+    window.history.replaceState(window.history.state, '', buildQuery(next) || window.location.pathname);
+    setQuery(next);
+  };
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: attempt only re-runs the load on retry
   useEffect(() => {
@@ -44,16 +51,20 @@ export function UserPage({ user }: { user: string }) {
     setState({ status: 'loading' });
     (async () => {
       const archives = (await getArchives(user)).reverse();
-      const start = Math.max(
-        0,
-        archives.findIndex((url) => monthValue(url) === query.month),
-      );
+      if (current) setArchives(archives);
+      const start = query.month ? archives.findIndex((url) => monthValue(url) === query.month) : 0;
+      if (start < 0) return null;
       let months: Month[] = [];
       for (const url of archives.slice(start, start + parseQuery(window.location.search).months))
         months = addMonth(months, url, await getMonthGames(url));
       return { archives, start, months };
     })().then(
-      ({ archives, start, months }) => current && setState({ status: 'ready', archives, start, months }),
+      (loaded) => {
+        if (!current) return;
+        // a month this user never played (an old or edited link): drop it, which reloads from the newest
+        if (!loaded) return change({ ...query, month: '', months: 1 });
+        setState({ status: 'ready', ...loaded });
+      },
       (error) => current && setState({ status: 'error', error }),
     );
     return () => {
@@ -67,11 +78,6 @@ export function UserPage({ user }: { user: string }) {
     added.current = false;
     document.getElementById(`month-${state.months.length - 1}`)?.focus();
   }, [state]);
-
-  const change = (next: Query) => {
-    window.history.replaceState(window.history.state, '', buildQuery(next) || window.location.pathname);
-    setQuery(next);
-  };
 
   const loadMore = async () => {
     if (state.status !== 'ready') return;
@@ -101,22 +107,23 @@ export function UserPage({ user }: { user: string }) {
       {state.status === 'loading' && <p role="status">{t('user.loading')}</p>}
       {state.status === 'error' && <ApiError error={state.error} onRetry={() => setAttempt((n) => n + 1)} />}
       {state.status === 'ready' && state.archives.length === 0 && <p role="status">{t('user.empty')}</p>}
-      {state.status === 'ready' && state.archives.length > 0 && (
+      {state.status !== 'error' && archives.length > 0 && (
         <Filters
-          archives={state.archives}
+          archives={archives}
           query={query}
           active={active}
           shown={shown}
           total={loaded.length}
           // a different month restarts the list from that month; a filter keeps the months already loaded
-          onChange={(next) => change({ ...next, months: next.month === query.month ? state.months.length : 1 })}
+          onChange={(next) =>
+            change({
+              ...next,
+              months: next.month === query.month && state.status === 'ready' ? state.months.length : 1,
+            })
+          }
         />
       )}
-      {noMatch && (
-        <p role="status" className="page-lead">
-          {t('filters.empty')}
-        </p>
-      )}
+      {noMatch && <p className="page-lead">{t('filters.empty')}</p>}
       {state.status === 'ready' &&
         !noMatch &&
         state.months.map((month, i) => {

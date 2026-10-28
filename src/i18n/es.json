@@ -19,6 +19,21 @@
     "black": "Negras",
     "result": "Resultado"
   },
+  "filters": {
+    "title": "Filtrar partidas",
+    "timeClass": "Ritmo",
+    "color": "Color",
+    "result": "Resultado",
+    "month": "Mes",
+    "all": "Todos",
+    "allMonths": "Todos los meses",
+    "colors": { "white": "Blancas", "black": "Negras" },
+    "count_one": "{{shown}} de {{count}} partida",
+    "count_other": "{{shown}} de {{count}} partidas",
+    "clear": "Quitar filtros",
+    "empty": "Ninguna partida cumple estos filtros.",
+    "monthNone": "Ninguna partida de este mes cumple los filtros."
+  },
   "card": {
     "score": { "win": "1", "loss": "0", "draw": "½" },
     "result": { "win": "Victoria", "loss": "Derrota", "draw": "Tablas" },

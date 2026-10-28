@@ -110,3 +110,40 @@ test('a closed month is downloaded only once, even after a reload', async ({ pag
   await expect(page.getByText('MagnusCarlsen')).toBeVisible();
   expect(requests).toBe(1);
 });
+
+test('filters narrow the list, show an empty state, and survive a trip to a game', async ({
+  page,
+  expectNoSeriousA11yViolations,
+}) => {
+  await page.goto('/u/hikaru');
+  // hikaru: game 1 is blitz as white and a win, game 2 as black and a win; both blitz in the fixture except the first.
+  await page.getByLabel('Color').selectOption('black');
+  await expect(page).toHaveURL('/u/hikaru?color=black');
+  await expect(cards(page)).toHaveCount(1);
+  await expect(page.getByText('1 de 2 partidas')).toBeVisible();
+  await expectNoSeriousA11yViolations();
+
+  // Back from a game restores the same filtered list.
+  await cards(page).first().click();
+  await expect(page).toHaveURL('/u/hikaru/100000002?color=black');
+  await page.goBack();
+  await expect(page.getByLabel('Color')).toHaveValue('black');
+  await expect(cards(page)).toHaveCount(1);
+
+  await page.getByLabel('Resultado').selectOption('loss');
+  await expect(page.getByText('Ninguna partida cumple estos filtros.')).toBeVisible();
+  await page.getByRole('button', { name: 'Quitar filtros' }).click();
+  await expect(cards(page)).toHaveCount(2);
+  await expect(page).toHaveURL('/u/hikaru');
+});
+
+test('picking a month loads only that month and keeps going backwards from it', async ({ page }) => {
+  await page.goto('/u/hikaru');
+  await page.getByLabel('Mes').selectOption('2024-01');
+  await expect(page).toHaveURL('/u/hikaru?month=2024-01');
+  await expect(page.getByRole('heading', { name: 'enero de 2024' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'marzo de 2024' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Cargar mes anterior' }).click();
+  await expect(page.getByRole('heading', { name: 'diciembre de 2023' })).toBeVisible();
+  await expect(page).toHaveURL('/u/hikaru?month=2024-01&months=2');
+});

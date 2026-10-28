@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Game } from './chesscom';
-import { addMonth, gameId, monthStart, moveCount, playerView } from './games';
+import { addMonth, buildQuery, filterGames, gameId, monthStart, moveCount, parseQuery, playerView } from './games';
 
 const side = (username: string, rating: number, result: string) => ({ username, rating, result });
 const game = (url: string, endTime: number, over: Partial<Game> = {}): Game => ({
@@ -77,5 +77,45 @@ describe('addMonth', () => {
     const first = addMonth([], 'm2', [game('x', 10)]);
     const months = addMonth(first, 'm1', [game('x', 10), game('y', 5)]);
     expect(months.map((m) => m.games?.map((g) => g.url))).toEqual([['x'], ['y']]);
+  });
+});
+
+describe('filterGames', () => {
+  const games = [
+    game('a', 3, {}), // Hikaru white wins, blitz
+    game('b', 2, { timeClass: 'rapid', white: side('Hikaru', 1, 'resigned'), black: side('x', 1, 'win') }),
+    game('c', 1, { white: side('x', 1, 'win'), black: side('hikaru', 1, 'timeout') }),
+  ];
+  const all = { timeClass: '', color: '', result: '' } as const;
+
+  it('keeps everything with no filters', () => {
+    expect(filterGames(games, 'hikaru', all)).toHaveLength(3);
+  });
+
+  it('combines pace, colour and result', () => {
+    expect(
+      filterGames(games, 'hikaru', { timeClass: 'blitz', color: 'black', result: 'loss' }).map((g) => g.url),
+    ).toEqual(['c']);
+    expect(filterGames(games, 'hikaru', { ...all, timeClass: 'rapid' }).map((g) => g.url)).toEqual(['b']);
+    expect(filterGames(games, 'hikaru', { ...all, result: 'win' }).map((g) => g.url)).toEqual(['a']);
+  });
+});
+
+describe('query string', () => {
+  it('round-trips and omits defaults', () => {
+    const q = { timeClass: 'blitz', color: 'black', result: 'loss', month: '2025-03', months: 2 } as const;
+    expect(buildQuery(q)).toBe('?tc=blitz&color=black&result=loss&month=2025-03&months=2');
+    expect(parseQuery(buildQuery(q))).toEqual(q);
+    expect(buildQuery({ timeClass: '', color: '', result: '', month: '', months: 1 })).toBe('');
+  });
+
+  it('drops values it does not know', () => {
+    expect(parseQuery('?tc=chess960&color=red&result=x&month=nope&months=-4')).toEqual({
+      timeClass: '',
+      color: '',
+      result: '',
+      month: '',
+      months: 1,
+    });
   });
 });

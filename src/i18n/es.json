@@ -7,6 +7,21 @@
     "userLabel": "Usuario de chess.com",
     "submit": "Ver partidas"
   },
+  "paste": {
+    "label": "O pega un PGN",
+    "analyse": "Analizar",
+    "analyseThis": "Analizar esta partida",
+    "pick": "El texto trae {{count}} partidas. Elige una",
+    "game": "{{white}} – {{black}} · {{result}}",
+    "pageTitle": "Partida pegada",
+    "back": "Volver al inicio",
+    "error": {
+      "empty": "No encuentro ninguna partida en el texto.",
+      "setup": "La posición inicial del PGN no es válida.",
+      "illegalWhite": "Jugada ilegal en {{number}}. {{san}}",
+      "illegalBlack": "Jugada ilegal en {{number}}… {{san}}"
+    }
+  },
   "user": {
     "back": "Cambiar de usuario",
     "loading": "Cargando sus partidas…",

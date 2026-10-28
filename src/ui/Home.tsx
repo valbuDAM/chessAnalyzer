@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
 import { getPlayer, normalizeUser } from '../domain/chesscom.ts';
 import { ApiError } from './ApiError.tsx';
+import { PastePgn } from './PastePgn.tsx';
 import './Home.css';
 
 export function Home() {
@@ -53,6 +54,7 @@ export function Home() {
         </div>
       </form>
       {error !== null && <ApiError error={error} onRetry={check} />}
+      <PastePgn />
     </main>
   );
 }

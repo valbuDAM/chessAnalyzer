@@ -18,6 +18,7 @@
     "error": {
       "empty": "No encuentro ninguna partida en el texto.",
       "setup": "La posición inicial del PGN no es válida.",
+      "variant": "Este PGN es de la variante {{name}}, que todavía no se puede analizar.",
       "illegalWhite": "Jugada ilegal en {{number}}. {{san}}",
       "illegalBlack": "Jugada ilegal en {{number}}… {{san}}"
     }
@@ -54,6 +55,7 @@
     "result": { "win": "Victoria", "loss": "Derrota", "draw": "Tablas" },
     "color": { "white": "con blancas", "black": "con negras" },
     "timeClass": { "bullet": "Bullet", "blitz": "Blitz", "rapid": "Rápida", "daily": "Diaria" },
+    "unsupported": "No compatible",
     "moves_one": "{{count}} jugada",
     "moves_other": "{{count}} jugadas"
   },
@@ -61,7 +63,15 @@
     "title": "{{white}} contra {{black}}",
     "loading": "Buscando la partida…",
     "notFound": "No hay ninguna partida con ese enlace entre las de este usuario.",
-    "back": "Volver a sus partidas"
+    "back": "Volver a sus partidas",
+    "unsupported": "Esta partida es de la variante {{variant}}. Zugzwang solo analiza ajedrez estándar, así que todavía no se puede ver ni analizar."
+  },
+  "variant": {
+    "chess960": "Chess960",
+    "crazyhouse": "Crazyhouse",
+    "bughouse": "Bughouse",
+    "kingofthehill": "Rey de la colina",
+    "threecheck": "Tres jaques"
   },
   "error": {
     "invalidUser": "Escribe el nombre de usuario de chess.com, no el nombre real: solo letras, números, «_» y «-», sin espacios.",

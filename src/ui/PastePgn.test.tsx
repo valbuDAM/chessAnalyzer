@@ -29,6 +29,12 @@ it('says which move is illegal and does not open the board', () => {
   expect(history).toEqual(['/']);
 });
 
+it('refuses a variant, naming it, and does not open the board', () => {
+  const history = setup(`[Variant "Chess960"]\n\n1. e4 e5 *`);
+  expect(screen.getByRole('alert')).toHaveTextContent('Chess960');
+  expect(history).toEqual(['/']);
+});
+
 it('says so when there is no game', () => {
   setup('hola');
   expect(screen.getByRole('alert')).toBeInTheDocument();

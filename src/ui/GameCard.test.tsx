@@ -27,6 +27,26 @@ it('shows the game from the user side and links to it', () => {
   expect(link).toHaveAttribute('data-result', 'loss');
 });
 
+it('marks a variant as not supported but still links to it', () => {
+  render(
+    <Router>
+      <GameCard game={{ ...game, variant: 'chess960' }} user="hikaru" />
+    </Router>,
+  );
+  const link = screen.getByRole('link');
+  expect(link).toHaveAccessibleName(/No compatible/);
+  expect(link).toHaveAttribute('href', '/u/hikaru/100000001');
+});
+
+it('does not mark a standard game', () => {
+  render(
+    <Router>
+      <GameCard game={{ ...game, variant: 'chess' }} user="hikaru" />
+    </Router>,
+  );
+  expect(screen.getByRole('link')).not.toHaveAccessibleName(/No compatible/);
+});
+
 it('names a draw and the black pieces', () => {
   const drawn = { ...game, white: { ...game.white, result: 'agreed' }, black: { ...game.black, result: 'agreed' } };
   render(<GameCard game={drawn} user="MagnusCarlsen" />);

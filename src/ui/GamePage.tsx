@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'wouter';
 import { findGame, type Game, outcome } from '../domain/chesscom.ts';
 import { playerView } from '../domain/games.ts';
+import { isStandard } from '../domain/pgn.ts';
 import { formatDate, formatNumber } from '../i18n/format.ts';
 import { ApiError } from './ApiError.tsx';
 import { GameViewer } from './GameViewer.tsx';
+import { variantName } from './variantName.ts';
 import './Home.css';
 
 type State =
@@ -62,7 +64,11 @@ function GameSummary({ game, user }: { game: Game; user: string }) {
       <p className="game-summary-result">
         {t('user.result')}: <strong>{outcome(game)}</strong>
       </p>
-      <GameViewer pgn={game.pgn} orientation={playerView(game, user).color} />
+      {isStandard(game.variant) ? (
+        <GameViewer pgn={game.pgn} orientation={playerView(game, user).color} />
+      ) : (
+        <p role="alert">{t('gamePage.unsupported', { variant: variantName(t, game.variant as string) })}</p>
+      )}
     </section>
   );
 }

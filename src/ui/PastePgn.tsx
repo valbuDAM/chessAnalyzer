@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
 import { PgnError, type PgnGame, type PgnProblem, parseGamePgn, readPgn } from '../domain/pgn.ts';
 import { storePastedGame } from './PastedGamePage.tsx';
+import { variantName } from './variantName.ts';
 
 export function PastePgn() {
   const { t } = useTranslation();
@@ -78,5 +79,6 @@ export function PastePgn() {
 
 function problemText(t: ReturnType<typeof useTranslation>['t'], p: PgnProblem) {
   if (p.kind === 'illegal') return t(p.black ? 'paste.error.illegalBlack' : 'paste.error.illegalWhite', p);
+  if (p.kind === 'variant') return t('paste.error.variant', { name: variantName(t, p.name) });
   return t(`paste.error.${p.kind}`);
 }

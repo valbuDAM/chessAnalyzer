@@ -158,6 +158,20 @@ describe('getMonthGames', () => {
     expect(games?.[0]?.pgn).toContain('1. e4 e5');
   });
 
+  it('keeps the rules of the API and the Variant header of a recovered PGN', async () => {
+    const [game] = month.games;
+    server.use(http.get(url, () => HttpResponse.json({ games: [game, { ...game, rules: 'chess960' }] })));
+    expect((await getMonthGames(url))?.map((g) => g.variant)).toEqual(['chess', 'chess960']);
+    await clear(); // a closed month is served from the cache
+
+    const pgn = `[Event "Live Chess"]\n[Variant "Chess960"]\n[White "a"]\n[Black "b"]\n[Result "*"]\n[WhiteElo "1"]\n[BlackElo "1"]\n[TimeControl "600"]\n[EndDate "2024.03.01"]\n[EndTime "10:00:00"]\n[Link "https://www.chess.com/game/live/9"]\n\n1. e4 *`;
+    server.use(
+      http.get(url, () => internalError()),
+      http.get(`${url}/pgn`, () => HttpResponse.text(pgn)),
+    );
+    expect((await getMonthGames(url))?.[0]?.variant).toBe('Chess960');
+  });
+
   it('rejects a game with a malformed player', async () => {
     const [game] = month.games;
     server.use(http.get(url, () => HttpResponse.json({ games: [{ ...game, white: {} }] })));

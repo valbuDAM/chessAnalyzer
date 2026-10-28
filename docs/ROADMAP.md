@@ -1,12 +1,18 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T2.5
+▶ Siguiente tarea: T2.6
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T2.4 cerrada (PR #42 y #43, ya mergeados). M2 sigue con T2.5 (pegar PGN) y T2.6 (variantes).
+- **Tarea:** T2.5 cerrada (PR #45, ya mergeado). M2 sigue solo con T2.6 (variantes).
+- **Entregado en T2.5:**
+  - `src/domain/pgn.ts`: `PgnError(problem)` con `PgnProblem = empty | setup | illegal {number, black, san}` (el número sale de `pos.fullmoves`, así que cuenta bien desde una FEN) y `readPgn(text)` → `PgnGame[]` (`pgn` de cada partida con `makePgn`, jugadores, resultado, fecha). Solo cuenta las partidas con jugadas. `parseGamePgn` lanza `PgnError`.
+  - `PastePgn` (en `Home`): un único formulario. Con una partida la abre; con varias muestra radios y «Analizar esta partida». Solo valida la elegida. Error en `role="alert"` bajo el área de texto: «Jugada ilegal en 12. Qe5» / «12… Nf6».
+  - `/pgn` (`PastedGamePage`) lee la partida de una variable de módulo o de `sessionStorage` (por si el navegador bloquea el almacenamiento); sin nada, vuelve a `/`. Blancas siempre abajo.
+- **Límites de T2.5:** sin subir ni arrastrar `.pgn`; lista sin paginar (`shortcut:`); con almacenamiento bloqueado la partida se pierde al recargar; el error no dice de qué partida es; no se ha visto en móvil real ni en tema claro. `parseGamePgn` ya trata `Variant "Chess960"`, así que T2.6 debe decidir qué hace con eso.
+- **Tarea anterior:** T2.4 cerrada (PR #42 y #43).
 - **Entregado en T2.4:**
   - `src/domain/games.ts`: `parseQuery`/`buildQuery` (`?tc=&color=&result=&month=YYYY-MM&months=N`, un valor por filtro, los desconocidos se ignoran) y `filterGames`. `UserPage` guarda ese estado en la URL con `replaceState`; la tarjeta y `GamePage` lo devuelven entero al volver.
   - Selector de mes con todos los meses de `getArchives`: elegir uno carga solo ese mes y «Cargar mes anterior» sigue hacia atrás desde él. Un `?month=` que el usuario no jugó se descarta. `Filters` va montado aunque cargue otro mes (`archives` aparte del `state`) para no perder el foco.
@@ -70,7 +76,7 @@
   - Si reaparecen sandboxes en `.stryker-tmp`, quitar primero los junctions con `rmdir` y después `rm -rf`.
   - Pasar a `@stryker-mutator/vitest-runner` si `mutate` se vuelve lento.
     - T1.1 ya activa la cobertura de `src/domain/` (`chesscom.ts` 93,5 % ramas). Cliente: `getArchives` y `getMonthGames`, cola en serie; fixtures escritos a mano, no respuestas reales.  - Heredados: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`.
-- **Siguiente:** T2.5 · `/model sonnet`, `/advisor off`, `/effort low`. Pegar PGN: validar con chessops y dar «Jugada ilegal en N. …»; reutiliza `parseGamePgn` de `src/domain/pgn.ts`.
+- **Siguiente:** T2.6 · mismo modelo y esfuerzo (`sonnet`, `low`, advisor off). Detectar variantes y avisar; empieza con grilling (qué hacer con Chess960, que `parseGamePgn` ya admite).
 
 ## Leyenda
 
@@ -321,7 +327,7 @@
 **Tests:** U de la función de filtrado · C de los controles · E del botón atrás.
 **Depende de:** T2.3 · **Modelo:** sonnet · low · advisor no · **Skills:** frontend-design
 
-### T2.5 · Pegar PGN — `pendiente`
+### T2.5 · Pegar PGN — `hecha` (PR #45)
 **Objetivo:** Analizar cualquier partida sin chess.com.
 **RF:**
 - Área de texto con validación.

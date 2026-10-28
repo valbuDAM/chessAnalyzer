@@ -76,12 +76,18 @@
   - `ponytail-debt`: un solo marcador `shortcut:` (`UciEngine.ts`: solo ajedrez estándar y sin timeout de arranque).
   - `ponytail-audit`: sano, JS inicial ~115 KB gz (presupuesto 200). Dos hallazgos aceptados, sin tarea propia: (1) la CI no verifica que `public/engine/` coincida con los SHA-256 fijados: añadir `node scripts/vendor-engine.mjs --check` (sale con error si no coincide, sin descargar) como paso de CI antes del build; (2) falta un test de `UciEngine` para `stop()` entre `ucinewgame`/`isready` y `go` (la rama `if (job.settled) return` tras `readyok`). Los dos entran de paso en la primera tarea que toque el motor (T4.1/T4.2).
   - `/usage` al 53 % al cerrar M1 y T2.1 (revisado por la usuaria).
+- **Cierre de M2:**
+  - `npm run mutate` en verde: 91,3 % (`pgn.ts` 98,7 %, `games.ts` 100 %, `analysis.ts` 98,4 %, `engine/` 97,7 %, `chesscom.ts` 79,9 %, justo bajo el 80 % por archivo; el umbral que rompe es el total). **Tardó 44 min**: el aviso de pasar a `@stryker-mutator/vitest-runner` sigue en pie y ya es urgente.
+  - e2e Chromium, móvil, Firefox y WebKit en verde: run manual `all_browsers` 40683351772 sobre `main`.
+  - `ponytail-debt`: 6 marcadores `shortcut:`, todos con trigger (caché antigua, motor solo estándar, `moveCount` con variantes, lista pegada sin paginar, almacenamiento bloqueado, blancas siempre abajo).
+  - `ponytail-audit`: sano, JS inicial ~110 KB gz, `npm audit` sin vulnerabilidades. Hallazgos aceptados, sin tarea propia: (1) «Cargar mes anterior» puede pisar la lista si se cambia de mes mientras carga: descartar la respuesta si `query.month` cambió; (2) un mes que falla tira toda la lista inicial (ya era límite de T2.3); (3) el paso 9 de `CLAUDE.md` habla de una preview de Cloudflare que no existe, mejor «revisar en local con `vite preview`»; (4) borrar las claves `games:v1:*` al abrir la caché. Los dos primeros entran de paso en la próxima tarea que toque `UserPage`.
+  - `/usage`: por revisar por la usuaria.
 - **Avisos:**
   - `stryker.config.json` lleva `"tsconfigFile": "none.json"` a propósito: el rewrite de tsconfig de Stryker peta con TypeScript 7. Quitarlo cuando Stryker soporte TS 7.
   - Si reaparecen sandboxes en `.stryker-tmp`, quitar primero los junctions con `rmdir` y después `rm -rf`.
   - Pasar a `@stryker-mutator/vitest-runner` si `mutate` se vuelve lento.
     - T1.1 ya activa la cobertura de `src/domain/` (`chesscom.ts` 93,5 % ramas). Cliente: `getArchives` y `getMonthGames`, cola en serie; fixtures escritos a mano, no respuestas reales.  - Heredados: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`.
-- **Siguiente:** cierre de M2 (`ponytail-audit`, `ponytail-debt`, `npm run mutate`, e2e Firefox/WebKit, `/usage`) y después T3.1 (`sonnet`, `medium`, advisor off, frontend-design).
+- **Siguiente:** T3.1 (`sonnet`, `medium`, advisor off, frontend-design).
 
 ## Leyenda
 

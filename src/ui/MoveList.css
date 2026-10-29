@@ -1,0 +1,55 @@
+.move-list {
+  position: relative; /* the buttons' offsetParent, for scrolling the list */
+  display: grid;
+  max-block-size: 24rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.move-list li {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr 1fr;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) 0;
+}
+
+.move-list-number {
+  color: var(--color-on-felt-muted);
+  text-align: end;
+}
+
+.move-list button {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-block-size: 1.5rem; /* WCAG 2.2 target size: 24px */
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+}
+
+.move-list button:hover {
+  background: var(--color-raised);
+}
+
+.move-list button[aria-current="step"] {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font-weight: 700;
+}
+
+.move-list small {
+  margin-inline-start: auto;
+}
+
+.move-list strong {
+  font-weight: inherit;
+}

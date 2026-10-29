@@ -94,7 +94,7 @@
     "analysing": "Analizando {{done}} de {{total}} posiciones…",
     "progressLabel": "Progreso del análisis",
     "analysisError": "No se pudo analizar la partida. Puedes seguir recorriéndola.",
-    "evalList": "Evaluación de cada jugada"
+    "moves": "Jugadas"
   },
   "moveLabel": {
     "brilliant": "Brillante",

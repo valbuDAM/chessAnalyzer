@@ -20,6 +20,14 @@ export const formatDate = (date: Date | number) =>
 export const formatMonth = (date: Date | number) =>
   new Intl.DateTimeFormat(LOCALE, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date);
 
+/** Seconds on the clock → «2:59» or «1:00:01»; tenths are dropped. */
+export function formatClock(seconds: number): string {
+  const s = Math.floor(seconds);
+  const mm = Math.floor(s / 60) % 60;
+  const ss = String(s % 60).padStart(2, '0');
+  return s >= 3600 ? `${Math.floor(s / 3600)}:${String(mm).padStart(2, '0')}:${ss}` : `${mm}:${ss}`;
+}
+
 /** «+0,3», «−1,3», «#3», «-#2», «1-0»; always from white's point of view. */
 export function formatEval(score: WhiteScore): string {
   if (score.kind === 'cp') {

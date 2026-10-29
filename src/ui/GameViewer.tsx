@@ -7,6 +7,7 @@ import { createEngine } from '../engine/createEngine.ts';
 import { formatEval } from '../i18n/format.ts';
 import { Board } from './Board.tsx';
 import { EvalBar } from './EvalBar.tsx';
+import { MoveList } from './MoveList.tsx';
 import './GameViewer.css';
 
 type Analysis =
@@ -73,13 +74,6 @@ export function GameViewer({
     }
   };
 
-  const rows = scores
-    ? positions.flatMap((p, n) => {
-        const score = scores[n];
-        return n > 0 && score ? [{ fen: p.fen, san: p.san, n, score }] : [];
-      })
-    : [];
-
   return (
     <section className="game-viewer" aria-label={t('game.title')}>
       <div className="game-viewer-play">
@@ -115,20 +109,7 @@ export function GameViewer({
         </div>
       )}
       {analysis.status === 'error' && <p role="alert">{t('game.analysisError')}</p>}
-      {rows.length > 0 && (
-        <ol className="game-viewer-evals" aria-label={t('game.evalList')}>
-          {rows.map(({ fen, san, n, score }) => (
-            <li key={fen} aria-current={ply === n ? 'step' : undefined}>
-              <span>
-                {Math.ceil(n / 2)}
-                {n % 2 === 1 ? '.' : '…'}
-              </span>
-              <span>{san}</span>
-              <strong>{formatEval(score)}</strong>
-            </li>
-          ))}
-        </ol>
-      )}
+      <MoveList positions={positions} ply={ply} scores={scores} onSelect={setPly} />
     </section>
   );
 }

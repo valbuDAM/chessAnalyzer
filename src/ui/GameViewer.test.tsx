@@ -60,16 +60,24 @@ it('analyses the game: evaluation list from white, bar following the current mov
 
   await userEvent.click(screen.getByRole('button', { name: 'Analizar' }));
 
-  const list = await screen.findByRole('list', { name: 'Evaluación de cada jugada' });
-  const rows = within(list).getAllByRole('listitem');
-  expect(rows.map((r) => minus(r.textContent))).toEqual(['1.e4-0,3', '1…e5+0,3', '2.Nf3-0,1']);
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Analizar' })).toBeNull());
+  const rows = within(screen.getByRole('list', { name: 'Jugadas' })).getAllByRole('listitem');
+  expect(rows.map((r) => minus(r.textContent))).toEqual(['1.e4-0,3e5+0,3', '2.Nf3-0,1']);
   expect(screen.queryByRole('button', { name: 'Analizar' })).toBeNull();
   expect(dispose).toHaveBeenCalledOnce();
 
   expect(screen.getByRole('meter')).toHaveAttribute('aria-valuetext', '+0,2');
   await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
   expect(minus(screen.getByRole('meter').getAttribute('aria-valuetext'))).toBe('-0,3');
-  expect(rows[0]).toHaveAttribute('aria-current', 'step');
+  expect(within(rows[0] as HTMLElement).getByRole('button', { name: /e4/ })).toHaveAttribute('aria-current', 'step');
+});
+
+it('jumps to a move when it is clicked in the list', async () => {
+  render(<GameViewer pgn={PGN} />);
+
+  await userEvent.click(screen.getByRole('button', { name: /Nf3/ }));
+
+  expect(screen.getByRole('status')).toHaveTextContent('Jugada 3 de 3Nf3');
 });
 
 it('shows progress and disables the button while analysing; leaving stops and releases the engine', async () => {

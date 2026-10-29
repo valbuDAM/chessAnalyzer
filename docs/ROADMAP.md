@@ -1,12 +1,17 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T3.1
+▶ Siguiente tarea: T3.2
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T2.6 cerrada (PR #47, ya mergeado). M2 completo salvo su checklist de cierre.
+- **Tarea:** T3.1 cerrada (PR #50, ya mergeado).
+- **Entregado en T3.1:**
+  - `MoveList` (`src/ui/MoveList.tsx`) sustituye a la lista de evaluaciones de `GameViewer`: pares numerados, cada jugada es un botón (`onSelect(ply)`), `aria-current="step"` en la actual, reloj `[%clk]` (`formatClock` en `src/i18n/format.ts`) y evaluación una vez analizada. Clave i18n `game.evalList` → `game.moves`.
+  - El scroll mueve solo la lista (`scrollTop` desde `offsetTop`), con la función de ref estable a nivel de módulo; con `scrollIntoView` la página saltaba en cada render. En jsdom no hace nada: lo cubre un e2e con 36 jugadas.
+- **Límites de T3.1:** falta el encabezado con la apertura (M5). No se ha visto en tema claro ni en móvil real, ni con 100+ jugadas; el contraste usa `--color-on-felt-muted` (el número de jugada falló axe con `--color-text-muted`). El test de la captura de peón en `GameViewer.test.tsx` falló una vez por timeout de animación.
+- **Tarea anterior:** T2.6 cerrada (PR #47, ya mergeado). M2 completo salvo su checklist de cierre.
 - **Entregado en T2.6** (ADR-027):
   - `isStandard(variant)` en `src/domain/pgn.ts` (lista blanca) y `Game.variant` (`rules` de la API o cabecera `Variant` del PGN). Clave de caché `games:v2:<url>`.
   - `parseGamePgn` lanza `PgnError({ kind: 'variant', name })`; la rama Chess960 se borró. `PastePgn` lo muestra en `role="alert"`.
@@ -87,7 +92,7 @@
   - Si reaparecen sandboxes en `.stryker-tmp`, quitar primero los junctions con `rmdir` y después `rm -rf`.
   - Pasar a `@stryker-mutator/vitest-runner` si `mutate` se vuelve lento.
     - T1.1 ya activa la cobertura de `src/domain/` (`chesscom.ts` 93,5 % ramas). Cliente: `getArchives` y `getMonthGames`, cola en serie; fixtures escritos a mano, no respuestas reales.  - Heredados: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`.
-- **Siguiente:** T3.1 (`sonnet`, `medium`, advisor off, frontend-design).
+- **Siguiente:** T3.2 (`sonnet`, `medium`, advisor off).
 
 ## Leyenda
 
@@ -364,7 +369,7 @@
 
 ## M3 · Tablero y reproducción
 
-### T3.1 · Lista de jugadas — `pendiente`
+### T3.1 · Lista de jugadas — `hecha` (PR #50)
 **Objetivo:** Navegar por la partida desde su notación.
 **RF:**
 - SAN en pares numerados; clic para saltar a una jugada.

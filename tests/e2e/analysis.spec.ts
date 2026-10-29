@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 
 const game = {
@@ -11,6 +12,12 @@ const game = {
   white: { username: 'ana', rating: 1500, result: 'checkmated' },
   black: { username: 'luis', rating: 1510, result: 'win' },
 };
+
+// On narrow screens the move list starts folded.
+async function openMoves(page: Page) {
+  const panel = page.locator('details.game-viewer-moves');
+  if ((await panel.getAttribute('open')) === null) await panel.getByText('Jugadas', { exact: true }).click();
+}
 
 test.beforeEach(async ({ page }) => {
   await page.route('https://api.chess.com/pub/player/ana', (r) => r.fulfill({ json: { username: 'ana' } }));
@@ -36,6 +43,7 @@ test('the move list scrolls itself, not the page, to keep the current move in vi
   const list = page.getByRole('list', { name: 'Jugadas' });
   const next = page.getByRole('button', { name: 'Siguiente' });
   for (let i = 0; i < 36; i++) await next.click();
+  await openMoves(page); // folded on narrow screens: opening must show the current move
 
   const [box, last] = await Promise.all([list.boundingBox(), list.getByRole('button').last().boundingBox()]);
   expect(last?.y).toBeGreaterThanOrEqual(box?.y ?? Infinity);
@@ -50,6 +58,7 @@ test('user → list → game → analysis with the real engine', async ({ page, 
   await expect(page.getByRole('heading', { name: 'ana contra luis' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Analizar' }).click();
+  await openMoves(page);
 
   const moves = page.getByRole('list', { name: 'Jugadas' }).getByRole('button');
   await expect(page.getByRole('button', { name: 'Analizar' })).toHaveCount(0, { timeout: 60_000 });
@@ -73,6 +82,7 @@ test('the game can be walked with the keyboard alone', async ({ page, expectNoSe
   await page.getByRole('link', { name: /luis/ }).click();
 
   await expect(page.getByRole('heading', { name: 'ana contra luis' })).toBeVisible();
+  await openMoves(page);
   const status = page.getByRole('status');
   const moves = page.getByRole('list', { name: 'Jugadas' }).getByRole('button');
   await page.keyboard.press('ArrowRight');

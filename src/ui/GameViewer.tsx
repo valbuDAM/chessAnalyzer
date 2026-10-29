@@ -7,7 +7,7 @@ import { createEngine } from '../engine/createEngine.ts';
 import { formatEval } from '../i18n/format.ts';
 import { Board } from './Board.tsx';
 import { EvalBar } from './EvalBar.tsx';
-import { MoveList } from './MoveList.tsx';
+import { MoveList, scrollToView } from './MoveList.tsx';
 import { playSound, readMuted, soundKind, storeMuted } from './sound.ts';
 import './GameViewer.css';
 
@@ -39,6 +39,8 @@ export function GameViewer({
   const [analysis, setAnalysis] = useState<Analysis>({ status: 'idle' });
   const [flipped, setFlipped] = useState(false);
   const [muted, setMuted] = useState(readMuted);
+  // Read once: a rotation must not undo the reader's own fold.
+  const [movesOpen] = useState(() => !window.matchMedia?.('(max-width: 40rem)').matches);
   const engine = useRef<Engine>(null);
   const lastPly = useRef(0);
   const last = (positions?.length ?? 1) - 1;
@@ -165,7 +167,15 @@ export function GameViewer({
         </div>
       )}
       {analysis.status === 'error' && <p role="alert">{t('game.analysisError')}</p>}
-      <MoveList positions={positions} ply={ply} scores={scores} onSelect={setPly} />
+      <details
+        className="game-viewer-moves"
+        open={movesOpen}
+        // A closed list cannot scroll itself, so bring the current move into view when it opens.
+        onToggle={(e) => scrollToView(e.currentTarget.querySelector<HTMLButtonElement>('[aria-current="step"]'))}
+      >
+        <summary>{t('game.moves')}</summary>
+        <MoveList positions={positions} ply={ply} scores={scores} onSelect={setPly} />
+      </details>
     </section>
   );
 }

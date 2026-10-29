@@ -54,6 +54,7 @@
   --measure: 68ch;
 
   /* Space (4 px grid) and radii */
+  --target-touch: 2.75rem; /* 44px: comfortable touch target */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;

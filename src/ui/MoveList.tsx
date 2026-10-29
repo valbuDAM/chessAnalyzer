@@ -6,7 +6,7 @@ import './MoveList.css';
 
 // Scrolls only the list, never the page, and only when the move is out of view. Stable identity: React
 // calls a ref function again whenever its identity changes, and that would re-scroll on every render.
-function scrollToView(el: HTMLButtonElement | null) {
+export function scrollToView(el: HTMLButtonElement | null) {
   const list = el?.offsetParent;
   if (!el || !list) return;
   if (el.offsetTop < list.scrollTop) list.scrollTop = el.offsetTop;

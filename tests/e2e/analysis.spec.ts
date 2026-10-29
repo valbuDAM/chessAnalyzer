@@ -97,3 +97,64 @@ test('the game can be walked with the keyboard alone', async ({ page, expectNoSe
   await expect(page.getByRole('button', { name: 'Girar tablero' })).toHaveAttribute('aria-pressed', 'true');
   await expectNoSeriousA11yViolations();
 });
+
+async function openGame(page: Page) {
+  await page.goto('/');
+  await page.getByLabel('Usuario de chess.com').fill('ana');
+  await page.getByRole('button', { name: 'Ver partidas' }).click();
+  await page.getByRole('link', { name: /luis/ }).click();
+  await expect(page.getByRole('heading', { name: 'ana contra luis' })).toBeVisible();
+}
+
+// `delete window.X` is silently ignored on the mobile (Pixel 7) project; redefining the property is not.
+const hideGlobal = (name: string) => `Object.defineProperty(window, '${name}', { value: undefined });`;
+
+// Each branch of the fallback chain (ADR-008): which Worker script is requested proves which build was picked.
+const branches = [
+  { name: 'multi-thread when the page is isolated', script: /\/stockfish-19-lite\.js/, text: 'multihilo', hide: '' },
+  {
+    name: 'single thread without SharedArrayBuffer',
+    script: /\/stockfish-19-lite-single\.js/,
+    text: 'un hilo',
+    hide: hideGlobal('SharedArrayBuffer'),
+  },
+  {
+    name: 'asm.js without WebAssembly',
+    script: /\/stockfish-19-asm\.js/,
+    text: 'sin WebAssembly',
+    hide: hideGlobal('WebAssembly'),
+  },
+];
+
+for (const { name, script, text, hide } of branches) {
+  test(`engine variant: ${name}`, async ({ page }) => {
+    await page.addInitScript(hide);
+    await openGame(page);
+    const requested = page.waitForRequest(script);
+
+    await page.getByRole('button', { name: 'Analizar' }).click();
+    await requested;
+
+    await expect(page.getByRole('button', { name: 'Analizar' })).toHaveCount(0, { timeout: 60_000 });
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    await expect(page.locator('details.game-viewer-about')).toContainText(text);
+  });
+}
+
+test('a silent engine ends in "could not load" after 10 s and the game stays walkable', async ({ page }) => {
+  test.setTimeout(40_000);
+  await page.route('**/engine/stockfish-19-*.js', (r) =>
+    r.fulfill({
+      contentType: 'text/javascript',
+      headers: { 'cross-origin-embedder-policy': 'require-corp' },
+      body: '',
+    }),
+  );
+  await openGame(page);
+
+  await page.getByRole('button', { name: 'Analizar' }).click();
+
+  await expect(page.getByRole('alert')).toContainText('No se pudo cargar el motor', { timeout: 20_000 });
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(page.getByRole('status')).toContainText('Jugada 1 de 4');
+});

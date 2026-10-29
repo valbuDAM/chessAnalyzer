@@ -1,6 +1,14 @@
 import { Chess } from 'chessops/chess';
 import { parseFen } from 'chessops/fen';
-import { type AnalyseOptions, abortError, DEFAULT_DEPTH, type Engine, EngineError, type Eval } from './engine.ts';
+import {
+  type AnalyseOptions,
+  abortError,
+  DEFAULT_DEPTH,
+  type Engine,
+  EngineError,
+  EngineLoadError,
+  type Eval,
+} from './engine.ts';
 import { type Info, parseBestMove, parseInfo } from './uci.ts';
 
 export type Transport = {
@@ -23,7 +31,7 @@ type Job = {
 
 type Waiter = { test: (line: string) => boolean; resolve: () => void; reject: (reason: Error) => void };
 
-// shortcut: standard chess rules only (no Chess960 castling) and no start-up timeout; add both when a task needs them.
+// shortcut: standard chess rules only (no Chess960 castling); add Chess960 when a task needs it.
 function invalidReason(fen: string): string | undefined {
   const setup = parseFen(fen);
   if (setup.isErr) return `Invalid FEN: ${fen}`;
@@ -49,11 +57,15 @@ export class UciEngine implements Engine {
   #current: Job | undefined;
   #started: Promise<void> | undefined;
   #failure: EngineError | undefined;
+  #ready = false;
+  readonly #startTimeout: number;
 
-  constructor(transport: Transport) {
+  /** `startTimeout`: ms the engine has to answer the handshake before it counts as not loaded (T4.1). */
+  constructor(transport: Transport, { startTimeout = 10_000 } = {}) {
     this.#transport = transport;
+    this.#startTimeout = startTimeout;
     transport.onLine((line) => this.#onLine(line));
-    transport.onError((message) => this.#fail(new EngineError(message)));
+    transport.onError((message) => this.#fail(new (this.#ready ? EngineError : EngineLoadError)(message)));
   }
 
   analyse(fen: string, opts: AnalyseOptions = {}): Promise<Eval> {
@@ -113,8 +125,18 @@ export class UciEngine implements Engine {
   }
 
   async #handshake(): Promise<void> {
-    await this.#ask('uci', (line) => line === 'uciok');
-    await this.#ask('isready', (line) => line === 'readyok');
+    // Failing rejects the pending `#ask`, so this one timer is cleared on success, timeout, error and dispose alike.
+    const timer = setTimeout(
+      () => this.#fail(new EngineLoadError('The engine did not start in time')),
+      this.#startTimeout,
+    );
+    try {
+      await this.#ask('uci', (line) => line === 'uciok');
+      await this.#ask('isready', (line) => line === 'readyok');
+      this.#ready = true;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   #finish(job: Job): void {

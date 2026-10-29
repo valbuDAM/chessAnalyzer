@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { analyseGame, type WhiteScore, winPercent } from '../domain/analysis.ts';
-import type { Engine } from '../domain/engine/engine.ts';
+import { type Engine, EngineLoadError } from '../domain/engine/engine.ts';
+import type { Variant } from '../domain/engine/variant.ts';
 import { parseGamePgn } from '../domain/pgn.ts';
-import { createEngine } from '../engine/createEngine.ts';
+import { createEngine, detectVariant } from '../engine/createEngine.ts';
 import { formatEval } from '../i18n/format.ts';
 import { Board } from './Board.tsx';
 import { EvalBar } from './EvalBar.tsx';
@@ -15,17 +16,20 @@ type Analysis =
   | { status: 'idle' }
   | { status: 'running'; done: number; total: number }
   | { status: 'done'; scores: WhiteScore[] }
-  | { status: 'error' };
+  | { status: 'error'; engineLoad: boolean };
 
 export function GameViewer({
   pgn,
   orientation = 'white',
   makeEngine = createEngine,
+  variant = detectVariant(),
 }: {
   pgn: string;
   /** The side shown at the bottom, for the board and the evaluation bar alike. */
   orientation?: 'white' | 'black';
   makeEngine?: () => Engine;
+  /** The engine build `makeEngine` will load, shown in "About the analysis". */
+  variant?: Variant;
 }) {
   const { t } = useTranslation();
   const positions = useMemo(() => {
@@ -110,8 +114,9 @@ export function GameViewer({
         { onProgress: (done, total) => setAnalysis({ status: 'running', done, total }) },
       );
       setAnalysis({ status: 'done', scores: result });
-    } catch {
-      if (!own || engine.current === own) setAnalysis({ status: 'error' });
+    } catch (error) {
+      if (!own || engine.current === own)
+        setAnalysis({ status: 'error', engineLoad: error instanceof EngineLoadError });
     } finally {
       own?.dispose();
       if (engine.current === own) engine.current = null;
@@ -166,7 +171,13 @@ export function GameViewer({
           <span aria-hidden="true">{t('game.analysing', { done: analysis.done, total: analysis.total })}</span>
         </div>
       )}
-      {analysis.status === 'error' && <p role="alert">{t('game.analysisError')}</p>}
+      {analysis.status === 'error' && (
+        <p role="alert">{t(analysis.engineLoad ? 'game.engineLoadError' : 'game.analysisError')}</p>
+      )}
+      <details className="game-viewer-about">
+        <summary>{t('game.about')}</summary>
+        <p>{t(`game.variant.${variant}`)}</p>
+      </details>
       <details
         className="game-viewer-moves"
         open={movesOpen}

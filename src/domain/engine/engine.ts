@@ -25,4 +25,7 @@ export class EngineError extends Error {
   override name = 'EngineError';
 }
 
+/** The engine never got ready (Worker failed to load or stayed silent): analysis is unavailable, not just one position. */
+export class EngineLoadError extends EngineError {}
+
 export const abortError = () => Object.assign(new Error('Analysis aborted'), { name: 'AbortError' });

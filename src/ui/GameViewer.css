@@ -52,6 +52,12 @@
   accent-color: var(--color-accent);
 }
 
+.game-viewer-about p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.game-viewer-about summary,
 .game-viewer-moves summary {
   display: flex;
   align-items: center;

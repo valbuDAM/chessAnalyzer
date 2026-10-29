@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { EngineLoadError } from './engine.ts';
 import { type Transport, UciEngine } from './UciEngine.ts';
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -180,6 +181,60 @@ describe('UciEngine', () => {
     await a;
     await b;
     await expect(engine.analyse(START)).rejects.toMatchObject({ message: 'worker died' });
+  });
+
+  describe('start-up', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('fails with EngineLoadError when the engine does not answer `uci` within the timeout', async () => {
+      vi.useFakeTimers();
+      const engine = new UciEngine(
+        scriptedTransport(() => []),
+        { startTimeout: 10_000 },
+      );
+      const first = expect(engine.analyse(START)).rejects.toBeInstanceOf(EngineLoadError);
+      await vi.advanceTimersByTimeAsync(9_999);
+      await vi.advanceTimersByTimeAsync(1);
+      await first;
+      await expect(engine.analyse(START)).rejects.toBeInstanceOf(EngineLoadError);
+    });
+
+    it('waits 10 s by default', async () => {
+      vi.useFakeTimers();
+      const engine = new UciEngine(scriptedTransport(() => []));
+      const result = expect(engine.analyse(START)).rejects.toBeInstanceOf(EngineLoadError);
+      await vi.advanceTimersByTimeAsync(10_000);
+      await result;
+    });
+
+    it('does not time out an engine that loaded, nor a long search', async () => {
+      vi.useFakeTimers();
+      const t = scriptedTransport((c) => (c.startsWith('go') ? [] : defaultReply(c)));
+      const engine = new UciEngine(t, { startTimeout: 100 });
+      const search = engine.analyse(START);
+      await vi.waitFor(() => expect(goCount(t)).toBe(1));
+      await vi.advanceTimersByTimeAsync(60_000);
+      t.emit('info depth 1 score cp 1 pv e2e4');
+      t.emit('bestmove e2e4');
+      await expect(search).resolves.toMatchObject({ bestMove: 'e2e4' });
+    });
+
+    it('reports a transport error before the handshake as a load failure', async () => {
+      const t = scriptedTransport(() => []);
+      const pending = expect(new UciEngine(t).analyse(START)).rejects.toBeInstanceOf(EngineLoadError);
+      t.fail('Could not load the worker');
+      await pending;
+    });
+
+    it('reports a transport error after the handshake as a plain EngineError', async () => {
+      const t = scriptedTransport();
+      const engine = new UciEngine(t);
+      await engine.analyse(START);
+      t.fail('crashed');
+      const error = await engine.analyse(START).catch((e) => e);
+      expect(error).toMatchObject({ name: 'EngineError', message: 'crashed' });
+      expect(error).not.toBeInstanceOf(EngineLoadError);
+    });
   });
 
   it('dispose terminates the transport and rejects what is pending', async () => {

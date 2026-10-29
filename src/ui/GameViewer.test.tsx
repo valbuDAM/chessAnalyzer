@@ -119,3 +119,34 @@ it('shows the failure when the engine cannot even be created', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo analizar la partida');
   expect(screen.getByRole('button', { name: 'Analizar' })).toBeEnabled();
 });
+
+it('walks the game with the keyboard and announces each move', async () => {
+  render(<GameViewer pgn={PGN} />);
+  const status = screen.getByRole('status');
+
+  await userEvent.keyboard('{ArrowRight}');
+  expect(status).toHaveTextContent('1. e4, blancas');
+  await userEvent.keyboard('{ArrowRight}{ArrowRight}');
+  expect(status).toHaveTextContent('2. Cf3, blancas');
+  await userEvent.keyboard('{ArrowLeft}');
+  expect(status).toHaveTextContent('1. e5, negras');
+  await userEvent.keyboard('{Home}');
+  expect(status).toHaveTextContent('Posición inicial');
+  await userEvent.keyboard('{End}{ArrowRight}');
+  expect(status).toHaveTextContent('2. Cf3, blancas');
+  await userEvent.keyboard('{ArrowLeft}{ArrowLeft}{ArrowLeft}{ArrowLeft}');
+  expect(status).toHaveTextContent('Posición inicial');
+});
+
+it('flips the board with F and the button, and ignores keys with modifiers', async () => {
+  render(<GameViewer pgn={PGN} />);
+  const flip = screen.getByRole('button', { name: 'Girar tablero' });
+  expect(flip).toHaveAttribute('aria-pressed', 'false');
+  await userEvent.keyboard('f');
+  expect(flip).toHaveAttribute('aria-pressed', 'true');
+  await userEvent.click(flip);
+  expect(flip).toHaveAttribute('aria-pressed', 'false');
+
+  await userEvent.keyboard('{Control>}{ArrowRight}{/Control}');
+  expect(screen.getByRole('status')).toHaveTextContent('Posición inicial');
+});

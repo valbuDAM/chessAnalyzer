@@ -53,3 +53,9 @@
 .move-list strong {
   font-weight: inherit;
 }
+
+@media (max-width: 40rem), (pointer: coarse) {
+  .move-list button {
+    min-block-size: var(--target-touch);
+  }
+}

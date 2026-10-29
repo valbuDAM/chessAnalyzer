@@ -1,12 +1,17 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T3.3
+▶ Siguiente tarea: T3.4
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T3.2 cerrada (PR #53, ya mergeado).
+- **Tarea:** T3.3 cerrada (PR #55, ya mergeado).
+- **Entregado en T3.3:**
+  - `src/ui/sound.ts`: sonidos sintetizados con Web Audio (sin archivos, nada que licenciar), `soundKind(san, isLast)` (fin > jaque > captura > jugada), `readMuted`/`storeMuted` (`localStorage`; sin elección guardada, `prefers-reduced-motion` silencia). Botón «Sonidos» (`aria-pressed`) en los controles del visor; un efecto en `GameViewer` suena al cambiar de jugada.
+  - Los controles ahora hacen `flex-wrap`: con cuatro botones desbordaban a 375 px y rompían el e2e móvil (relevante para T3.4).
+- **Límites de T3.3:** timbres no escuchados ni ajustados; audio no probado en un navegador real (los tests simulan `playSound`); `shortcut:` si el almacenamiento está bloqueado la elección no sobrevive a la recarga.
+- **Tarea anterior:** T3.2 cerrada (PR #53, ya mergeado).
 - **Entregado en T3.2:**
   - `GameViewer`: un listener `keydown` en `window` (←/→, Inicio/Fin, `F`; ignora Ctrl/Alt/Meta y campos de texto) y botón «Girar tablero» (`aria-pressed`). El giro se suma a la prop `orientation` y llega también a la `EvalBar`.
   - El `role="status"` tiene el texto visible con `aria-hidden` y un `.sr-only` (en `base.css`) con el anuncio «2. Cf3, blancas» / «Posición inicial». Las letras de pieza van en español solo en el anuncio (`game.pieceLetters` = `RDTAC`); la lista de jugadas sigue en notación inglesa.
@@ -397,7 +402,7 @@
 **Tests:** E de teclado + axe.
 **Depende de:** T3.1 · **Modelo:** sonnet · medium · advisor no
 
-### T3.3 · Sonidos — `pendiente`
+### T3.3 · Sonidos — `hecha` (PR #55)
 **Objetivo:** Sonido de jugada, captura, jaque y fin de partida.
 **RF:**
 - Silenciable; la preferencia se guarda.

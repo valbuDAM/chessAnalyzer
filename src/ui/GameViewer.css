@@ -23,6 +23,7 @@
 
 .game-viewer-controls {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
 }
 

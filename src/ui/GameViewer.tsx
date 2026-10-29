@@ -8,6 +8,7 @@ import { formatEval } from '../i18n/format.ts';
 import { Board } from './Board.tsx';
 import { EvalBar } from './EvalBar.tsx';
 import { MoveList } from './MoveList.tsx';
+import { playSound, readMuted, soundKind, storeMuted } from './sound.ts';
 import './GameViewer.css';
 
 type Analysis =
@@ -37,7 +38,9 @@ export function GameViewer({
   const [ply, setPly] = useState(0);
   const [analysis, setAnalysis] = useState<Analysis>({ status: 'idle' });
   const [flipped, setFlipped] = useState(false);
+  const [muted, setMuted] = useState(readMuted);
   const engine = useRef<Engine>(null);
+  const lastPly = useRef(0);
   const last = (positions?.length ?? 1) - 1;
 
   useEffect(() => {
@@ -61,6 +64,12 @@ export function GameViewer({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [last]);
+
+  const san = positions?.[ply]?.san;
+  useEffect(() => {
+    if (lastPly.current !== ply && san && !muted) playSound(soundKind(san, ply === last));
+    lastPly.current = ply;
+  }, [ply, san, muted, last]);
 
   // Leaving the page stops the search; `analyse` ignores whatever the dropped engine rejects with.
   useEffect(
@@ -129,6 +138,16 @@ export function GameViewer({
         </button>
         <button type="button" aria-pressed={flipped} aria-keyshortcuts="F" onClick={() => setFlipped(!flipped)}>
           {t('game.flip')}
+        </button>
+        <button
+          type="button"
+          aria-pressed={!muted}
+          onClick={() => {
+            storeMuted(!muted);
+            setMuted(!muted);
+          }}
+        >
+          {t('game.sound')}
         </button>
       </div>
       {analysis.status !== 'done' && (

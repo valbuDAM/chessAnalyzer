@@ -96,6 +96,7 @@
     "analysisError": "No se pudo analizar la partida. Puedes seguir recorriéndola.",
     "moves": "Jugadas",
     "flip": "Girar tablero",
+    "sound": "Sonidos",
     "start": "Posición inicial",
     "announce": "{{number}}. {{san}}, {{side}}",
     "sideWhite": "blancas",

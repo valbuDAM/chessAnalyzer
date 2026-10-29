@@ -1,11 +1,12 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Engine, Eval } from '../domain/engine/engine.ts';
 import { FakeEngine } from '../domain/engine/FakeEngine.ts';
 import { parseGamePgn } from '../domain/pgn.ts';
 import '../i18n/index.ts';
 import { GameViewer } from './GameViewer.tsx';
+import * as sound from './sound.ts';
 
 const PGN = '1. e4 e5 2. Nf3 *';
 const ev = (cp: number): Eval => ({ score: { kind: 'cp', cp }, bestMove: 'e2e4', depth: 10, pv: [] });
@@ -149,4 +150,30 @@ it('flips the board with F and the button, and ignores keys with modifiers', asy
 
   await userEvent.keyboard('{Control>}{ArrowRight}{/Control}');
   expect(screen.getByRole('status')).toHaveTextContent('Posición inicial');
+});
+
+describe('sounds', () => {
+  afterEach(() => localStorage.clear());
+
+  it('play when stepping, stop when muted, and stay muted after a reload', async () => {
+    const play = vi.spyOn(sound, 'playSound').mockImplementation(() => {});
+    const { unmount } = render(<GameViewer pgn={PGN} />);
+    const toggle = screen.getByRole('button', { name: 'Sonidos' });
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+    expect(play).toHaveBeenCalledWith('move');
+
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    play.mockClear();
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+    expect(play).not.toHaveBeenCalled();
+
+    unmount();
+    render(<GameViewer pgn={PGN} />);
+    expect(screen.getByRole('button', { name: 'Sonidos' })).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+    expect(play).not.toHaveBeenCalled();
+  });
 });

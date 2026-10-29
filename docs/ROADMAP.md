@@ -1,12 +1,17 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: cierre de M3 (checklist común), después T4.1
+▶ Siguiente tarea: T4.1
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T3.4 cerrada (PR #57, ya mergeado y probado en un móvil real). M3 completo salvo su checklist de cierre.
+- **Tarea:** M3 cerrado (T3.1–T3.4 hechas). Checklist de cierre:
+  - `npm run mutate`: 85,78 % en `src/domain/` (mínimo 80 %); `chesscom.ts` 78,7 % y `UciEngine.ts` 81 % son los más flojos.
+  - `ponytail-debt`: 7 marcadores; solo `sound.ts:41` no nombra trigger (aceptado: almacenamiento bloqueado). El timeout de arranque de `UciEngine.ts:26` lo cubre T4.1.
+  - `ponytail-audit`: solo comprobaciones rápidas (`npm audit --omit=dev` sin vulnerabilidades, build en verde, JS de entrada 16 kB gz); sin lectura profunda del código.
+  - e2e Firefox/WebKit (job manual) y `/usage`: pendientes de la usuaria.
+- **Tarea anterior:** T3.4 cerrada (PR #57, ya mergeado y probado en un móvil real).
 - **Entregado en T3.4:**
   - Token `--target-touch` (44 px) en `tokens.css`; botones del visor y de la lista lo usan con `max-width: 40rem` o `pointer: coarse`. En móvil `.game-summary` reduce su padding lateral para que el tablero ocupe el ancho.
   - La lista de jugadas va en un `<details class="game-viewer-moves">`: cerrado por defecto en ≤ 40rem (se lee una vez con `matchMedia`), abierto en escritorio. Al abrirlo, `onToggle` reutiliza `scrollToView` (exportada de `MoveList`) para mostrar la jugada actual.

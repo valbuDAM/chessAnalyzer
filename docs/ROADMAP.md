@@ -1,12 +1,18 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T3.4
+▶ Siguiente tarea: cierre de M3 (checklist común), después T4.1
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T3.3 cerrada (PR #55, ya mergeado).
+- **Tarea:** T3.4 cerrada (PR #57, ya mergeado y probado en un móvil real). M3 completo salvo su checklist de cierre.
+- **Entregado en T3.4:**
+  - Token `--target-touch` (44 px) en `tokens.css`; botones del visor y de la lista lo usan con `max-width: 40rem` o `pointer: coarse`. En móvil `.game-summary` reduce su padding lateral para que el tablero ocupe el ancho.
+  - La lista de jugadas va en un `<details class="game-viewer-moves">`: cerrado por defecto en ≤ 40rem (se lee una vez con `matchMedia`), abierto en escritorio. Al abrirlo, `onToggle` reutiliza `scrollToView` (exportada de `MoveList`) para mostrar la jugada actual.
+  - `tests/e2e/mobile.spec.ts` (375×812 + axe); `analysis.spec.ts` abre el panel con `openMoves` porque en el proyecto móvil empieza cerrado.
+- **Límites de T3.4:** sin captura de pantalla ni revisión con el viewport en horizontal; el plegado no reacciona a un cambio de tamaño de ventana después de cargar.
+- **Tarea anterior:** T3.3 cerrada (PR #55, ya mergeado).
 - **Entregado en T3.3:**
   - `src/ui/sound.ts`: sonidos sintetizados con Web Audio (sin archivos, nada que licenciar), `soundKind(san, isLast)` (fin > jaque > captura > jugada), `readMuted`/`storeMuted` (`localStorage`; sin elección guardada, `prefers-reduced-motion` silencia). Botón «Sonidos» (`aria-pressed`) en los controles del visor; un efecto en `GameViewer` suena al cambiar de jugada.
   - Los controles ahora hacen `flex-wrap`: con cuatro botones desbordaban a 375 px y rompían el e2e móvil (relevante para T3.4).
@@ -414,7 +420,7 @@
 **Depende de:** T3.1 · **Riesgos:** licencia de los sonidos → verificarla antes de añadirlos.
 **Modelo:** sonnet · low · advisor no · **Skills:** frontend-design
 
-### T3.4 · Diseño móvil — `pendiente`
+### T3.4 · Diseño móvil — `hecha` (PR #57)
 **Objetivo:** Visor completo y cómodo en 375 px.
 **RF:**
 - Tablero a ancho completo y controles táctiles de ≥ 44 px.

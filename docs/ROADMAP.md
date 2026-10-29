@@ -1,16 +1,20 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T4.1
+▶ Siguiente tarea: T4.2
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** M3 cerrado (T3.1–T3.4 hechas). Checklist de cierre:
-  - `npm run mutate`: 85,78 % en `src/domain/` (mínimo 80 %); `chesscom.ts` 78,7 % y `UciEngine.ts` 81 % son los más flojos.
-  - `ponytail-debt`: 7 marcadores; solo `sound.ts:41` no nombra trigger (aceptado: almacenamiento bloqueado). El timeout de arranque de `UciEngine.ts:26` lo cubre T4.1.
-  - `ponytail-audit`: solo comprobaciones rápidas (`npm audit --omit=dev` sin vulnerabilidades, build en verde, JS de entrada 16 kB gz); sin lectura profunda del código.
-  - e2e Firefox/WebKit (job manual) y `/usage`: pendientes de la usuaria.
+- **Tarea:** T4.1 cerrada (PR #60, ya mergeado). Siguiente: T4.2.
+- **Entregado en T4.1:**
+  - `src/domain/engine/variant.ts`: `selectVariant({ wasm, threads })` → `lite-multi` | `lite-single` | `asm`, y `VARIANT_FILES`. `detectVariant()` (en `createEngine.ts`) lee `crossOriginIsolated`, `SharedArrayBuffer` y `WebAssembly`; `createEngine(variant?)` carga el Worker de esa variante.
+  - `UciEngine(transport, { startTimeout = 10_000 })`: el temporizador solo cubre el handshake. `EngineLoadError` (subclase de `EngineError`, mismo `name`) para timeout y para errores del Worker antes de `ready`; `GameViewer` lo distingue y muestra «No se pudo cargar el motor».
+  - `GameViewer` recibe `variant` y pinta un `<details class="game-viewer-about">` «Acerca del análisis» con la variante.
+  - e2e en `analysis.spec.ts`: una prueba por rama (qué script de Worker se pide) y un Worker mudo que acaba en el aviso a los 10 s. Para ocultar globales se usa `Object.defineProperty`: `delete window.X` no hace nada en el proyecto móvil (Pixel 7).
+- **Límites de T4.1:** si el multihilo no carga no se reintenta con el de un hilo (el roadmap solo pide aviso); `new Worker` que lanza síncrono sale como «No se pudo analizar» en vez de «No se pudo cargar el motor»; el multihilo corre con 1 hilo hasta T4.2; e2e Firefox/WebKit sin ejecutar.
+- **Pendiente para T4.2 (aceptados en el audit de M2, no entraron en T4.1):** paso de CI `node scripts/vendor-engine.mjs --check` antes del build, y test de `UciEngine` para `stop()` entre `ucinewgame`/`isready` y `go` (rama `if (job.settled) return` tras `readyok`).
+- **Pendiente de la usuaria (cierre de M3):** e2e Firefox/WebKit (job manual) y `/usage`. Cierre de M3: `mutate` 85,78 % en `src/domain/` (`chesscom.ts` 78,7 % y `UciEngine.ts` 81 % los más flojos); `ponytail-debt` sin marcadores sin trigger salvo `sound.ts:41` (aceptado).
 - **Tarea anterior:** T3.4 cerrada (PR #57, ya mergeado y probado en un móvil real).
 - **Entregado en T3.4:**
   - Token `--target-touch` (44 px) en `tokens.css`; botones del visor y de la lista lo usan con `max-width: 40rem` o `pointer: coarse`. En móvil `.game-summary` reduce su padding lateral para que el tablero ocupe el ancho.
@@ -439,7 +443,7 @@
 
 ## M4 · Motor robusto
 
-### T4.1 · Detección de capacidades y fallback — `pendiente`
+### T4.1 · Detección de capacidades y fallback — `hecha` (PR #60)
 **Objetivo:** Elegir siempre la mejor variante que funcione.
 **RF:**
 - Cadena de fallback:

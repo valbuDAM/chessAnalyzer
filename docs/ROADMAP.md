@@ -90,7 +90,7 @@
 - **Avisos:**
   - `stryker.config.json` lleva `"tsconfigFile": "none.json"` a propósito: el rewrite de tsconfig de Stryker peta con TypeScript 7. Quitarlo cuando Stryker soporte TS 7.
   - Si reaparecen sandboxes en `.stryker-tmp`, quitar primero los junctions con `rmdir` y después `rm -rf`.
-  - Pasar a `@stryker-mutator/vitest-runner` si `mutate` se vuelve lento.
+  - `mutate` usa `@stryker-mutator/vitest-runner` (antes `command`, 44 min): 8 min 43 s, pero 85,8 % frente a 91,3 % (`UciEngine.ts` 81 %, `chesscom.ts` 78,7 %). Sin analizar por qué baja; `vitest.dir: src/domain` rompe la detección de tests ("No tests were found"), por eso no se usa.
     - T1.1 ya activa la cobertura de `src/domain/` (`chesscom.ts` 93,5 % ramas). Cliente: `getArchives` y `getMonthGames`, cola en serie; fixtures escritos a mano, no respuestas reales.  - Heredados: Lighthouse solo mide `/`; COEP `require-corp` y avatares de chess.com; cabeceras duplicadas en `_headers` y `vite.config.ts`.
 - **Siguiente:** T3.2 (`sonnet`, `medium`, advisor off).
 

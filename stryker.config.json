@@ -1,9 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker-js/master/packages/core/schema/stryker-schema.json",
-  "testRunner": "command",
-  "commandRunner": {
-    "command": "npx vitest run src/domain --passWithNoTests"
-  },
+  "testRunner": "vitest",
   "tsconfigFile": "none.json",
   "mutate": ["src/domain/**/*.ts", "!src/domain/**/*.test.ts"],
   "ignorePatterns": [".claude", "dist", "coverage", ".lighthouseci", "test-results", "playwright-report"],

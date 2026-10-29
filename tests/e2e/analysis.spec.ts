@@ -65,3 +65,25 @@ test('user → list → game → analysis with the real engine', async ({ page, 
   await expect(moves.nth(2)).toHaveAttribute('aria-current', 'step');
   await expectNoSeriousA11yViolations();
 });
+
+test('the game can be walked with the keyboard alone', async ({ page, expectNoSeriousA11yViolations }) => {
+  await page.goto('/');
+  await page.getByLabel('Usuario de chess.com').fill('ana');
+  await page.getByRole('button', { name: 'Ver partidas' }).click();
+  await page.getByRole('link', { name: /luis/ }).click();
+
+  await expect(page.getByRole('heading', { name: 'ana contra luis' })).toBeVisible();
+  const status = page.getByRole('status');
+  const moves = page.getByRole('list', { name: 'Jugadas' }).getByRole('button');
+  await page.keyboard.press('ArrowRight');
+  await expect(status).toContainText('1. f3, blancas');
+  await expect(moves.nth(0)).toHaveAttribute('aria-current', 'step');
+  await page.keyboard.press('End');
+  await expect(status).toContainText('2. Dh4#, negras');
+  await page.keyboard.press('Home');
+  await expect(status).toContainText('Posición inicial');
+
+  await page.keyboard.press('f');
+  await expect(page.getByRole('button', { name: 'Girar tablero' })).toHaveAttribute('aria-pressed', 'true');
+  await expectNoSeriousA11yViolations();
+});

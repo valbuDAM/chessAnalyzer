@@ -36,7 +36,31 @@ export function GameViewer({
   }, [pgn]);
   const [ply, setPly] = useState(0);
   const [analysis, setAnalysis] = useState<Analysis>({ status: 'idle' });
+  const [flipped, setFlipped] = useState(false);
   const engine = useRef<Engine>(null);
+  const last = (positions?.length ?? 1) - 1;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target;
+      if (
+        e.altKey ||
+        e.ctrlKey ||
+        e.metaKey ||
+        (target instanceof HTMLElement && target.matches('input, textarea, select'))
+      )
+        return;
+      if (e.key === 'ArrowLeft') setPly((p) => Math.max(0, p - 1));
+      else if (e.key === 'ArrowRight') setPly((p) => Math.min(last, p + 1));
+      else if (e.key === 'Home') setPly(0);
+      else if (e.key === 'End') setPly(last);
+      else if (e.key.toLowerCase() === 'f') setFlipped((f) => !f);
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [last]);
 
   // Leaving the page stops the search; `analyse` ignores whatever the dropped engine rejects with.
   useEffect(
@@ -49,10 +73,19 @@ export function GameViewer({
   );
 
   if (!positions) return <p role="alert">{t('game.invalid')}</p>;
-  const last = positions.length - 1;
   const current = positions[ply];
   const scores = analysis.status === 'done' ? analysis.scores : undefined;
   const currentScore = scores?.[ply];
+  const side = flipped ? (orientation === 'white' ? 'black' : 'white') : orientation;
+  // Piece letters spoken in Spanish (Cf3, not Nf3); the only uppercase letters in SAN besides O-O are pieces.
+  const spokenSan = current?.san?.replace(/[KQRBN]/g, (c) => t('game.pieceLetters').charAt('KQRBN'.indexOf(c)));
+  const announcement = spokenSan
+    ? t('game.announce', {
+        number: Math.ceil(ply / 2),
+        san: spokenSan,
+        side: t(ply % 2 ? 'game.sideWhite' : 'game.sideBlack'),
+      })
+    : t('game.start');
 
   const analyse = async () => {
     let own: Engine | undefined;
@@ -78,13 +111,14 @@ export function GameViewer({
     <section className="game-viewer" aria-label={t('game.title')}>
       <div className="game-viewer-play">
         {currentScore && (
-          <EvalBar whitePercent={winPercent(currentScore)} text={formatEval(currentScore)} orientation={orientation} />
+          <EvalBar whitePercent={winPercent(currentScore)} text={formatEval(currentScore)} orientation={side} />
         )}
-        <Board fen={current?.fen ?? ''} label={t('game.boardLabel')} orientation={orientation} />
+        <Board fen={current?.fen ?? ''} label={t('game.boardLabel')} orientation={side} />
       </div>
       <p className="game-viewer-status" role="status">
-        {t('game.move', { current: ply, total: last })}
-        {current?.san && <strong>{current.san}</strong>}
+        <span aria-hidden="true">{t('game.move', { current: ply, total: last })}</span>
+        {current?.san && <strong aria-hidden="true">{current.san}</strong>}
+        <span className="sr-only">{announcement}</span>
       </p>
       <div className="game-viewer-controls">
         <button type="button" disabled={ply === 0} onClick={() => setPly(ply - 1)}>
@@ -92,6 +126,9 @@ export function GameViewer({
         </button>
         <button type="button" disabled={ply === last} onClick={() => setPly(ply + 1)}>
           {t('game.next')}
+        </button>
+        <button type="button" aria-pressed={flipped} aria-keyshortcuts="F" onClick={() => setFlipped(!flipped)}>
+          {t('game.flip')}
         </button>
       </div>
       {analysis.status !== 'done' && (

@@ -94,7 +94,13 @@
     "analysing": "Analizando {{done}} de {{total}} posiciones…",
     "progressLabel": "Progreso del análisis",
     "analysisError": "No se pudo analizar la partida. Puedes seguir recorriéndola.",
-    "moves": "Jugadas"
+    "moves": "Jugadas",
+    "flip": "Girar tablero",
+    "start": "Posición inicial",
+    "announce": "{{number}}. {{san}}, {{side}}",
+    "sideWhite": "blancas",
+    "sideBlack": "negras",
+    "pieceLetters": "RDTAC"
   },
   "moveLabel": {
     "brilliant": "Brillante",

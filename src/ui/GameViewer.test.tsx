@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Engine, Eval } from '../domain/engine/engine.ts';
+import { type Engine, EngineLoadError, type Eval } from '../domain/engine/engine.ts';
 import { FakeEngine } from '../domain/engine/FakeEngine.ts';
 import { parseGamePgn } from '../domain/pgn.ts';
 import '../i18n/index.ts';
@@ -107,6 +107,32 @@ it('keeps the game usable and allows retrying when the engine fails', async () =
   expect(screen.getByRole('button', { name: 'Analizar' })).toBeEnabled();
   await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
   expect(screen.getByRole('status')).toHaveTextContent('Jugada 1 de 3e4');
+});
+
+it('says the engine could not be loaded, apart from other failures, and the game stays walkable', async () => {
+  const engine: Engine = {
+    analyse: () => Promise.reject(new EngineLoadError('timeout')),
+    stop: vi.fn(),
+    dispose: vi.fn(),
+  };
+  render(<GameViewer pgn={PGN} makeEngine={() => engine} />);
+
+  await userEvent.click(screen.getByRole('button', { name: 'Analizar' }));
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo cargar el motor');
+  await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+  expect(screen.getByRole('status')).toHaveTextContent('Jugada 1 de 3e4');
+});
+
+it.each([
+  ['lite-multi', 'Stockfish 19 lite, multihilo'],
+  ['lite-single', 'Stockfish 19 lite, un hilo'],
+  ['asm', 'Stockfish 19 asm.js, sin WebAssembly'],
+] as const)('tells which engine variant analyses the game: %s', (variant, text) => {
+  render(<GameViewer pgn={PGN} variant={variant} />);
+
+  const about = screen.getByText('Acerca del análisis').closest('details');
+  expect(about).toHaveTextContent(text);
 });
 
 it('shows the failure when the engine cannot even be created', async () => {

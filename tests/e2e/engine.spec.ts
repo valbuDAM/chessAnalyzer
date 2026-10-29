@@ -38,9 +38,11 @@ test('mate in one: reports mate 1 and the mating move', async ({ page }) => {
   expect(result.bestMove).toBe('a1a8');
 });
 
-test('serves the engine wasm as application/wasm', async ({ request }) => {
-  const response = await request.get('/engine/stockfish-19-lite-single.wasm');
-  expect(response.headers()['content-type']).toContain('application/wasm');
+test('serves each engine wasm as application/wasm', async ({ request }) => {
+  for (const file of ['stockfish-19-lite-single.wasm', 'stockfish-19-lite.wasm']) {
+    const response = await request.get(`/engine/${file}`);
+    expect(response.headers()['content-type']).toContain('application/wasm');
+  }
 });
 
 test('has no serious a11y violations', async ({ expectNoSeriousA11yViolations }) => {

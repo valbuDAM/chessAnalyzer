@@ -1,12 +1,17 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T3.2
+▶ Siguiente tarea: T3.3
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T3.1 cerrada (PR #50, ya mergeado).
+- **Tarea:** T3.2 cerrada (PR #53, ya mergeado).
+- **Entregado en T3.2:**
+  - `GameViewer`: un listener `keydown` en `window` (←/→, Inicio/Fin, `F`; ignora Ctrl/Alt/Meta y campos de texto) y botón «Girar tablero» (`aria-pressed`). El giro se suma a la prop `orientation` y llega también a la `EvalBar`.
+  - El `role="status"` tiene el texto visible con `aria-hidden` y un `.sr-only` (en `base.css`) con el anuncio «2. Cf3, blancas» / «Posición inicial». Las letras de pieza van en español solo en el anuncio (`game.pieceLetters` = `RDTAC`); la lista de jugadas sigue en notación inglesa.
+- **Límites de T3.2:** no se ha probado con un lector de pantalla real; los tests no comprueban que el tablero gire de verdad (solo `aria-pressed`); el giro no se anuncia ni se guarda entre partidas.
+- **Tarea anterior:** T3.1 cerrada (PR #50, ya mergeado).
 - **Entregado en T3.1:**
   - `MoveList` (`src/ui/MoveList.tsx`) sustituye a la lista de evaluaciones de `GameViewer`: pares numerados, cada jugada es un botón (`onSelect(ply)`), `aria-current="step"` en la actual, reloj `[%clk]` (`formatClock` en `src/i18n/format.ts`) y evaluación una vez analizada. Clave i18n `game.evalList` → `game.moves`.
   - El scroll mueve solo la lista (`scrollTop` desde `offsetTop`), con la función de ref estable a nivel de módulo; con `scrollIntoView` la página saltaba en cada render. En jsdom no hace nada: lo cubre un e2e con 36 jugadas.
@@ -381,7 +386,7 @@
 **Tests:** C · E.
 **Depende de:** T1.3 · **Modelo:** sonnet · medium · advisor no · **Skills:** frontend-design
 
-### T3.2 · Teclado y lector de pantalla — `pendiente`
+### T3.2 · Teclado y lector de pantalla — `hecha` (PR #53)
 **Objetivo:** Recorrer la partida sin ratón.
 **RF:**
 - ←/→, Inicio/Fin y `F` para girar el tablero.

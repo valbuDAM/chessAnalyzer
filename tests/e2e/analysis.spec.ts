@@ -45,9 +45,16 @@ test('the move list scrolls itself, not the page, to keep the current move in vi
   for (let i = 0; i < 36; i++) await next.click();
   await openMoves(page); // folded on narrow screens: opening must show the current move
 
-  const [box, last] = await Promise.all([list.boundingBox(), list.getByRole('button').last().boundingBox()]);
-  expect(last?.y).toBeGreaterThanOrEqual(box?.y ?? Infinity);
-  expect((last?.y ?? Infinity) + (last?.height ?? 0)).toBeLessThanOrEqual((box?.y ?? 0) + (box?.height ?? 0) + 1);
+  // The scroll happens on the next frame, so poll for it.
+  await expect
+    .poll(async () => {
+      const [box, last] = await Promise.all([list.boundingBox(), list.getByRole('button').last().boundingBox()]);
+      return (
+        (last?.y ?? Infinity) >= (box?.y ?? Infinity) &&
+        (last?.y ?? Infinity) + (last?.height ?? 0) <= (box?.y ?? 0) + (box?.height ?? 0) + 1
+      );
+    })
+    .toBe(true);
 });
 
 test('user → list → game → analysis with the real engine', async ({ page, expectNoSeriousA11yViolations }) => {
@@ -184,4 +191,33 @@ test('a silent engine ends in "could not load" after 10 s and the game stays wal
   await expect(page.getByRole('alert')).toContainText('No se pudo cargar el motor', { timeout: 20_000 });
   await page.getByRole('button', { name: 'Siguiente' }).click();
   await expect(page.getByRole('status')).toContainText('Jugada 1 de 4');
+});
+
+test('walking a 300-ply game while it is analysed leaves no long tasks on the main thread', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'the Long Tasks API is Chromium-only');
+  // Knights shuffling out and back: 75 cycles of 4 plies, all legal.
+  const cycles = Array.from({ length: 75 }, (_, i) => `${2 * i + 1}. Nf3 Nf6 ${2 * i + 2}. Ng1 Ng8`).join(' ');
+  const pgn = `[White "ana"]\n[Black "luis"]\n\n${cycles} *`;
+  await page.route('https://api.chess.com/pub/player/ana/games/2024/**', (r) =>
+    r.fulfill({ json: { games: [{ ...game, pgn }] } }),
+  );
+  await openGame(page);
+  await page.evaluate(() => {
+    const w = window as unknown as { longTasks: number[] };
+    w.longTasks = [];
+    new PerformanceObserver((list) => {
+      for (const e of list.getEntries()) w.longTasks.push(e.duration);
+    }).observe({ entryTypes: ['longtask'] });
+  });
+
+  await page.getByRole('button', { name: 'Analizar' }).click();
+  for (let i = 0; i < 100; i++) await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('status')).toContainText('Jugada 100 de 300');
+
+  // shortcut: the API only reports tasks over 50 ms and a shared CI runner jitters by ~5 ms around that, so the bar is 100 ms; tighten if runners get quieter.
+  const longTasks = await page.evaluate(() => (window as unknown as { longTasks: number[] }).longTasks);
+  expect(longTasks.filter((d) => d > 100)).toEqual([]);
 });

@@ -19,7 +19,7 @@ export function analysisSettings({
   cores: number;
   mobile: boolean;
 }): AnalysisSettings {
-  const multi = variant === 'lite-multi';
+  const multi = variant === 'lite-multi' || variant === 'full-multi';
   return {
     depth: multi && !mobile ? 16 : 12,
     threads: multi ? Math.max(1, Math.min(cores - 1, 4)) : 1,

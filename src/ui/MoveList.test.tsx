@@ -3,7 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 import { parseGamePgn } from '../domain/pgn.ts';
 import '../i18n/index.ts';
+import { formatEval } from '../i18n/format.ts';
 import { MoveList } from './MoveList.tsx';
+
+vi.mock('../i18n/format.ts', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../i18n/format.ts')>();
+  return { ...original, formatEval: vi.fn(original.formatEval) };
+});
 
 const positions = parseGamePgn('1. e4 {[%clk 0:02:59.5]} e5 {[%clk 1:00:01]} 2. Nf3 *');
 
@@ -31,4 +37,16 @@ it('shows the evaluation of each move when there is one', () => {
 
   expect(screen.getByRole('button', { name: /e4/ })).toHaveTextContent('+0,2');
   expect(screen.getByRole('button', { name: /Nf3/ })).toHaveTextContent('+0,1');
+});
+
+it('only re-renders the move whose evaluation just arrived', () => {
+  const onSelect = () => {};
+  const cp = (n: number) => ({ kind: 'cp' as const, cp: n });
+  const before = [cp(0), cp(20)];
+  const { rerender } = render(<MoveList positions={positions} ply={0} scores={before} onSelect={onSelect} />);
+  vi.mocked(formatEval).mockClear();
+
+  rerender(<MoveList positions={positions} ply={0} scores={[...before, cp(-30)]} onSelect={onSelect} />);
+
+  expect(formatEval).toHaveBeenCalledTimes(1);
 });

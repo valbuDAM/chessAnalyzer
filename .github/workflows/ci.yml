@@ -25,8 +25,8 @@ jobs:
     env:
       E2E_ALL: ${{ inputs.all_browsers && '1' || '' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -48,7 +48,7 @@ jobs:
       - name: Get Playwright version
         id: pw
         run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         id: pw-cache
         with:
           path: ~/.cache/ms-playwright
@@ -63,7 +63,7 @@ jobs:
         run: npx playwright install-deps firefox webkit
       - name: e2e
         run: npm run e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report

@@ -1,6 +1,6 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T4.5b (sonnet · high · advisor sí; sin cambios de `/effort` ni `/advisor`)
+▶ Siguiente tarea: cierre de M4 (checklist común: `ponytail-audit`, `ponytail-debt`, `npm run mutate`, e2e Firefox/WebKit, `/usage`). Después, T5.1 (sonnet · high · advisor sí)
 
 ## Notas de traspaso (tarea en curso)
 
@@ -12,7 +12,14 @@
   - `src/domain/engine/fullWasm.ts`: `FULL_WASM` (URL de unpkg, SHA-256 y 99 076 105 bytes), `downloadWasm(spec, {fetch, caches, storage}, {signal, onProgress})`, `cachedWasm(spec, caches)` (nunca toca la red) y `removeWasm(caches)`. Errores: `WasmDownloadError.kind` ∈ `quota | network | size | hash | aborted`; cualquier fallo deja la caché vacía, copia anterior incluida.
   - `variant.ts`: `'full-multi'` y `canOfferFull({variant, coarse, deviceMemory})`. `settings.ts`: `full-multi` usa los mismos ajustes que `lite-multi`. `es.json`: `game.variant.full-multi`.
   - `createEngine.ts`: `createFullEngine(blob)` (Worker con el `blob:` en el `#hash`, revocado en `uciok`, error o `terminate`). `stockfish-19.js` vendorizado y fijado en `FILES`.
-- **Para T4.5b:** `createEngine`/`detectVariant` siguen síncronos; el modo profundo se decide en la UI con `cachedWasm` + `createFullEngine`. Hay que tratar `caches` ausente o que lanza (contexto inseguro, modo privado) como «no disponible» y quedarse en lite. `createFullEngine` no tiene test unitario (necesita un Worker real): lo cubre la prueba manual.
+- **Tarea anterior:** T4.5b cerrada (PR #71, ya mergeado y probado a mano en la preview). Con ella queda hecho M4.
+- **Entregado en T4.5b:**
+  - `src/engine/deep.ts`: `detectDeep()` devuelve las dependencias del modo profundo (`cached`/`download`/`remove`) o `undefined` si no se ofrece (`canOfferFull`, `caches` ausente o que lanza). `GameViewer` las recibe por la prop `deep` y `makeFullEngine`.
+  - `useDeepMode` (`checking | off{error?} | downloading{mb} | on | unavailable`; «activado» = wasm en la caché, nada en `localStorage`) y `DeepMode.tsx` dentro de «Acerca del análisis». El progreso se repinta por MB entero.
+  - `GameViewer`: la variante efectiva es `full-multi` si está activado; el análisis guarda la variante que lo produjo; al cambiar de modo se relee la caché de esa variante o vuelve «Analizar». Copia que no carga o expulsada → lite con aviso, guardado como lite.
+  - Tests: 17 de componente (`GameViewer.deep.test.tsx`), 7 de `detectDeep` y un e2e con unpkg caído (solo Chromium: en táctil no se ofrece).
+- **Límites de T4.5b:** al abrir con el modo activado se ve un instante el análisis lite antes de pasar al full; `createFullEngine` y el `uciok` real con el `blob:` sin test automático (los cubre la prueba manual); Firefox, WebKit y equipos modestos sin medir; con workers de Playwright en paralelo algunos e2e fallan por carga en esta máquina (pasan con `--workers=1`).
+- **Pendiente de la usuaria (cierre de M4):** e2e Firefox/WebKit (job manual) y `/usage`.
 - **Límites de T4.5a:** `uciok` real con el `blob:` sin comprobar en un navegador (solo lo midió ADR-029 en Chromium); Firefox, WebKit y equipos modestos sin medir.
 - **Tarea anterior:** T4.4 cerrada (PR #66, ya mergeado).
 - **Entregado en T4.4:**
@@ -534,7 +541,7 @@
 **Depende de:** T4.3 · **Riesgos:** unpkg sin garantías de servicio.
 **Modelo:** sonnet · high · advisor sí · **Skills:** tdd
 
-### T4.5b · Modo profundo: interfaz y retorno a lite — `pendiente`
+### T4.5b · Modo profundo: interfaz y retorno a lite — `hecha` (PR #71)
 **Objetivo:** Activar, usar y desactivar el modo profundo desde «Acerca del análisis» (ADR-029).
 **RF:**
 - Opción en escritorio aislado con ≥ 4 GB si se conoce, con aviso del tamaño.

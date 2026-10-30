@@ -1,11 +1,16 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T4.4
+▶ Siguiente tarea: T4.5 (sonnet · high · advisor sí: `/effort high` y `/advisor opus`)
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
+- **Tarea anterior:** T4.4 cerrada (PR #66, ya mergeado).
+- **Entregado en T4.4:**
+  - `MoveList`: cada jugada es un `Move` memoizado (una puntuación nueva repinta solo su jugada); el scroll a la jugada actual se difiere un frame (`scrollSoon`) porque leer `offsetTop` en el handler de teclado forzaba un layout de la lista entera (20–115 ms por paso con 300 jugadas).
+  - Tests: unitario del agrupado (`formatEval` se llama 1 vez, no 3) y e2e de long tasks con 300 jugadas en Chromium.
+- **Límites de T4.4:** el e2e tolera tareas de hasta 100 ms, no 50 (el API mide desde 50 y los runners oscilan; `shortcut:` en el test); no se mide en móvil ni en Firefox/WebKit; `content-visibility` se probó y se descartó (rompe el scroll exacto). El análisis ya notificaba una vez por posición, así que no hizo falta agrupar más en `analyseGame`.
 - **Tarea anterior:** T4.3 cerrada (PR #64, ya mergeado).
 - **Entregado en T4.3:**
   - `src/domain/analysisCache.ts`: `readAnalysis` / `writeAnalysis` sobre `idb-keyval`. Clave `analysis:v1:<variante>:<profundidad>:<sha256 de los FEN>` (no del PGN: el análisis solo depende de las posiciones). Una entrada con otra longitud que la partida se ignora. Si IndexedDB o `crypto.subtle` fallan, se sigue sin caché.
@@ -498,7 +503,7 @@
 **Tests:** U con `fake-indexeddb` · E.
 **Depende de:** T4.2 · **Modelo:** sonnet · medium · advisor no · **Skills:** tdd
 
-### T4.4 · Partidas muy largas y rendimiento — `pendiente`
+### T4.4 · Partidas muy largas y rendimiento — `hecha` (PR #66)
 **Objetivo:** Que una partida de más de 200 jugadas sea fluida.
 **RF:**
 - La UI se actualiza agrupada (un render por jugada analizada, no por cada línea `info`).

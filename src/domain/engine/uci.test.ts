@@ -7,9 +7,16 @@ describe('parseInfo', () => {
       parseInfo('info depth 10 seldepth 14 multipv 1 score cp 25 nodes 9000 nps 300000 pv e2e4 e7e5 g1f3'),
     ).toEqual({
       depth: 10,
+      multipv: 1,
       score: { kind: 'cp', cp: 25 },
       pv: ['e2e4', 'e7e5', 'g1f3'],
     });
+  });
+
+  it('reads the line number and takes a missing one as the first', () => {
+    expect(parseInfo('info depth 10 multipv 2 score cp -5 pv d2d4')).toMatchObject({ multipv: 2 });
+    expect(parseInfo('info depth 10 score cp -5 pv d2d4')).toMatchObject({ multipv: 1 });
+    expect(parseInfo('info depth 10 multipv 0 score cp -5 pv d2d4')).toBeUndefined();
   });
 
   it('reads mate scores, including being mated', () => {

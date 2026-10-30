@@ -49,6 +49,9 @@ function EngineCheck() {
         <button type="submit" style={{ background: 'var(--color-raised)' }}>
           Analizar
         </button>
+        <button type="button" style={{ background: 'var(--color-raised)' }} onClick={() => engine.current?.stop()}>
+          Detener
+        </button>
       </form>
       <output aria-label="Resultado">{result}</output>
       <p>

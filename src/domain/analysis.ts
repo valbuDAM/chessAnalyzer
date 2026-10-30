@@ -1,9 +1,6 @@
 import { Chess } from 'chessops/chess';
 import { parseFen } from 'chessops/fen';
-import type { Engine, Score } from './engine/engine.ts';
-
-/** Tracer depth (T1.5): fast enough for a whole game on lite single thread. A selector comes with M4/M5. */
-export const ANALYSIS_DEPTH = 10;
+import { abortError, DEFAULT_DEPTH, type Engine, type Score } from './engine/engine.ts';
 
 /** A position where the game is already over (mate, stalemate, insufficient material): the engine cannot analyse it. */
 export type FinalScore = { kind: 'final'; winner: 'white' | 'black' | null };
@@ -33,18 +30,37 @@ function toWhite(score: Score, fen: string): Score {
   return score.kind === 'cp' ? { kind: 'cp', cp: -score.cp } : { kind: 'mate', mate: -score.mate };
 }
 
-type Options = { depth?: number; onProgress?: (done: number, total: number) => void };
+type Options = {
+  depth?: number;
+  /** Aborting stops the engine and rejects with an `AbortError`; nothing of this analysis is reported afterwards. */
+  signal?: AbortSignal;
+  /** The scores so far (a copy): always a prefix of the game, in order. */
+  onProgress?: (scores: WhiteScore[]) => void;
+};
 
-/** Analyses the positions in series; rejects at the first engine failure. */
+/** Analyses the positions in series; rejects at the first engine failure or when aborted. */
 export async function analyseGame(
   engine: Engine,
   fens: string[],
-  { depth = ANALYSIS_DEPTH, onProgress }: Options = {},
+  { depth = DEFAULT_DEPTH, signal, onProgress }: Options = {},
 ): Promise<WhiteScore[]> {
-  const scores: WhiteScore[] = [];
-  for (const fen of fens) {
-    scores.push(finalScore(fen) ?? toWhite((await engine.analyse(fen, { depth })).score, fen));
-    onProgress?.(scores.length, fens.length);
+  // The engine may have answered just before the abort: check again after every `await`.
+  const checkAborted = () => {
+    if (signal?.aborted) throw abortError();
+  };
+  checkAborted();
+  const stop = () => engine.stop();
+  signal?.addEventListener('abort', stop, { once: true });
+  try {
+    const scores: WhiteScore[] = [];
+    for (const fen of fens) {
+      const score = finalScore(fen) ?? toWhite((await engine.analyse(fen, { depth })).score, fen);
+      checkAborted();
+      scores.push(score);
+      onProgress?.([...scores]);
+    }
+    return scores;
+  } finally {
+    signal?.removeEventListener('abort', stop);
   }
-  return scores;
 }

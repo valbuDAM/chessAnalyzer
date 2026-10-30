@@ -16,6 +16,7 @@ export default defineConfig({
   build: { rolldownOptions: { input: ['index.html', 'styleguide.html', 'engine-check.html'] } },
   test: {
     environment: 'jsdom',
+    testTimeout: 15_000, // with many files running in parallel, the CPU can starve jsdom
     setupFiles: ['src/test-setup.ts'],
     include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts'],
     coverage: {

@@ -1,6 +1,7 @@
 import type { Score } from './engine.ts';
 
-export type Info = { depth: number; score: Score; bound?: 'lower' | 'upper'; pv: string[] };
+/** `multipv` is the 1-based line number; Stockfish omits it when MultiPV is 1. */
+export type Info = { depth: number; multipv: number; score: Score; bound?: 'lower' | 'upper'; pv: string[] };
 
 /** Parses an `info` line; `undefined` for lines that carry no depth and score (`info string`, `currmove`…). */
 export function parseInfo(line: string): Info | undefined {
@@ -15,7 +16,15 @@ export function parseInfo(line: string): Info | undefined {
   }
   const bound = t[s + 3] === 'lowerbound' ? 'lower' : t[s + 3] === 'upperbound' ? 'upper' : undefined;
   const pv = t.includes('pv') ? t.slice(t.indexOf('pv') + 1) : [];
-  return { depth, score: kind === 'cp' ? { kind, cp: value } : { kind, mate: value }, ...(bound && { bound }), pv };
+  const multipv = t.includes('multipv') ? Number(t[t.indexOf('multipv') + 1]) : 1;
+  if (!Number.isInteger(multipv) || multipv < 1) return undefined;
+  return {
+    depth,
+    multipv,
+    score: kind === 'cp' ? { kind, cp: value } : { kind, mate: value },
+    ...(bound && { bound }),
+    pv,
+  };
 }
 
 /** `{ move: null }` when the position has no legal moves (`bestmove (none)`). */

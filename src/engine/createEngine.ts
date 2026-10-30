@@ -1,4 +1,5 @@
 import type { Engine } from '../domain/engine/engine.ts';
+import { type AnalysisSettings, analysisSettings, uciOptions } from '../domain/engine/settings.ts';
 import { type Transport, UciEngine } from '../domain/engine/UciEngine.ts';
 import { selectVariant, VARIANT_FILES, type Variant } from '../domain/engine/variant.ts';
 
@@ -27,5 +28,15 @@ function workerTransport(url: string): Transport {
   };
 }
 
+/** ADR-009 for this device. "Mobile" is a touch-first pointer, the same test the CSS uses for touch targets. */
+export const detectSettings = (variant: Variant = detectVariant()): AnalysisSettings =>
+  analysisSettings({
+    variant,
+    cores: navigator.hardwareConcurrency || 1,
+    mobile: window.matchMedia?.('(pointer: coarse)')?.matches ?? false,
+  });
+
 export const createEngine = (variant: Variant = detectVariant()): Engine =>
-  new UciEngine(workerTransport(`${import.meta.env.BASE_URL}engine/${VARIANT_FILES[variant]}`));
+  new UciEngine(workerTransport(`${import.meta.env.BASE_URL}engine/${VARIANT_FILES[variant]}`), {
+    options: uciOptions(detectSettings(variant)),
+  });

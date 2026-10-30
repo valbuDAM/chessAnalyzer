@@ -39,6 +39,8 @@ jobs:
         run: npm test -- --coverage
       - name: Hook tests
         run: node --test ".claude/hooks/*.test.mjs"
+      - name: Engine files match their pinned hashes
+        run: node scripts/vendor-engine.mjs --check
       - name: Build
         run: npm run build
       - name: Lighthouse CI (score + budget)

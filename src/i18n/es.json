@@ -102,6 +102,23 @@
       "lite-single": "Stockfish 19 lite, un hilo",
       "asm": "Stockfish 19 asm.js, sin WebAssembly"
     },
+    "fellBack": "El motor del análisis profundo no se pudo cargar: esta partida se ha analizado con lite.",
+    "deep": {
+      "offer": "El análisis profundo usa la red neuronal completa de Stockfish. Se descargan {{size}} MB una sola vez y se guardan en este navegador.",
+      "activate": "Descargar y activar",
+      "progressLabel": "Descarga del motor",
+      "downloading": "Descargando {{done}} de {{total}} MB",
+      "cancel": "Cancelar",
+      "on": "Análisis profundo activado.",
+      "remove": "Desactivar y borrar",
+      "error": {
+        "quota": "No hay espacio suficiente en este navegador para guardar el motor. Sigues con el análisis lite.",
+        "network": "No se pudo descargar el motor. Comprueba tu conexión; sigues con el análisis lite.",
+        "size": "La descarga no era válida y se descartó. Puedes intentarlo de nuevo.",
+        "hash": "La descarga no era válida y se descartó. Puedes intentarlo de nuevo.",
+        "unknown": "No se pudo activar el análisis profundo. Sigues con el análisis lite."
+      }
+    },
     "moves": "Jugadas",
     "flip": "Girar tablero",
     "sound": "Sonidos",

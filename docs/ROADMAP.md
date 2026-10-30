@@ -540,7 +540,7 @@
 **Tests:** C de los estados · E de unpkg caído con `page.route` · I manual (99 MB no van a la CI).
 **Prueba manual de T4.5:** en la preview de Cloudflare, abrir una partida, descargar, comprobar el progreso y recargar sin petición a unpkg; analizar y ver la variante en «Acerca del análisis»; «Desactivar y borrar» y comprobar que vuelve lite.
 **Depende de:** T4.5a · **Riesgos:** memoria en equipos modestos.
-**Modelo:** sonnet · medium · advisor no · **Skills:** frontend-design
+**Modelo:** sonnet · high · advisor sí · **Skills:** frontend-design
 
 ---
 

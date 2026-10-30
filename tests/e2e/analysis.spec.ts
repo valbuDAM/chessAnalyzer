@@ -141,6 +141,33 @@ for (const { name, script, text, hide } of branches) {
   });
 }
 
+test('a game analysed once reopens analysed after a reload, without starting the engine', async ({ page }) => {
+  await openGame(page);
+  await page.getByRole('button', { name: 'Analizar' }).click();
+  await expect(page.getByRole('button', { name: 'Analizar' })).toHaveCount(0, { timeout: 60_000 });
+  // The save is not awaited by the page: give it a moment before leaving.
+  await page.waitForFunction(
+    () =>
+      new Promise<boolean>((resolve) => {
+        const open = indexedDB.open('keyval-store');
+        open.onsuccess = () => {
+          const keys = open.result.transaction('keyval').objectStore('keyval').getAllKeys();
+          keys.onsuccess = () => resolve(keys.result.some((k) => String(k).startsWith('analysis:v1:')));
+        };
+      }),
+  );
+
+  const engineRequests: string[] = [];
+  page.on('request', (r) => {
+    if (/\/stockfish-19-/.test(r.url())) engineRequests.push(r.url());
+  });
+  await page.reload();
+
+  await expect(page.getByRole('meter', { name: 'Ventaja de las blancas' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Analizar' })).toHaveCount(0);
+  expect(engineRequests).toEqual([]);
+});
+
 test('a silent engine ends in "could not load" after 10 s and the game stays walkable', async ({ page }) => {
   test.setTimeout(40_000);
   await page.route('**/engine/stockfish-19-*.js', (r) =>

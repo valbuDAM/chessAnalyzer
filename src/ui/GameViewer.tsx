@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { analyseGame, type WhiteScore, winPercent } from '../domain/analysis.ts';
+import { readAnalysis, writeAnalysis } from '../domain/analysisCache.ts';
 import { type Engine, EngineLoadError } from '../domain/engine/engine.ts';
 import type { Variant } from '../domain/engine/variant.ts';
 import { parseGamePgn } from '../domain/pgn.ts';
@@ -49,6 +50,20 @@ function Viewer({ pgn, orientation = 'white', makeEngine = createEngine, variant
   const analysisAbort = useRef<AbortController>(null);
   const lastPly = useRef(0);
   const last = (positions?.length ?? 1) - 1;
+  const fens = useMemo(() => positions?.map((p) => p.fen) ?? [], [positions]);
+  const depth = detectSettings(variant).depth;
+
+  // A game analysed before opens already done; if the reader pressed "Analyse" first, the cache does not interfere.
+  useEffect(() => {
+    let stale = false;
+    if (positions)
+      void readAnalysis(fens, { variant, depth }).then((saved) => {
+        if (saved && !stale) setAnalysis((a) => (a.status === 'idle' ? { status: 'done', scores: saved } : a));
+      });
+    return () => {
+      stale = true;
+    };
+  }, [positions, fens, variant, depth]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -105,16 +120,13 @@ function Viewer({ pgn, orientation = 'white', makeEngine = createEngine, variant
     setAnalysis({ status: 'running', scores: [] });
     try {
       own = makeEngine();
-      const result = await analyseGame(
-        own,
-        positions.map((p) => p.fen),
-        {
-          depth: detectSettings(variant).depth,
-          signal: abort.signal,
-          onProgress: (so) => setAnalysis({ status: 'running', scores: so }),
-        },
-      );
+      const result = await analyseGame(own, fens, {
+        depth,
+        signal: abort.signal,
+        onProgress: (so) => setAnalysis({ status: 'running', scores: so }),
+      });
       setAnalysis({ status: 'done', scores: result });
+      void writeAnalysis(fens, { variant, depth }, result);
     } catch (error) {
       if (!abort.signal.aborted) setAnalysis({ status: 'error', engineLoad: error instanceof EngineLoadError });
     } finally {

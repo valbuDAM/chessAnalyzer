@@ -1,9 +1,13 @@
+import 'fake-indexeddb/auto';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { clear } from 'idb-keyval';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readAnalysis, writeAnalysis } from '../domain/analysisCache.ts';
 import { type Engine, EngineLoadError, type Eval } from '../domain/engine/engine.ts';
 import { FakeEngine } from '../domain/engine/FakeEngine.ts';
 import { parseGamePgn } from '../domain/pgn.ts';
+import { detectSettings } from '../engine/createEngine.ts';
 import '../i18n/index.ts';
 import { GameViewer } from './GameViewer.tsx';
 import * as sound from './sound.ts';
@@ -15,6 +19,8 @@ const scriptedEngine = (options?: { latency: number }) => {
   const fens = parseGamePgn(PGN).map((p) => p.fen);
   return new FakeEngine(Object.fromEntries(fens.map((fen, i) => [fen, ev([20, 30, 25, 10][i] as number)])), options);
 };
+// A game analysed by an earlier test would otherwise come straight from the cache.
+beforeEach(() => clear());
 const minus = (s: string | null) => s?.replace(/−/g, '-');
 
 it('steps through the moves and disables the buttons at both ends', async () => {
@@ -231,6 +237,43 @@ it('flips the board with F and the button, and ignores keys with modifiers', asy
 
   await userEvent.keyboard('{Control>}{ArrowRight}{/Control}');
   expect(screen.getByRole('status')).toHaveTextContent('Posición inicial');
+});
+
+describe('analysis cache', () => {
+  const fens = parseGamePgn(PGN).map((p) => p.fen);
+  const cacheSettings = () => ({ variant: 'lite-single', depth: detectSettings('lite-single').depth }) as const;
+
+  it('shows a saved analysis on opening, without starting the engine', async () => {
+    await writeAnalysis(fens, cacheSettings(), [
+      { kind: 'cp', cp: 20 },
+      { kind: 'cp', cp: -30 },
+      { kind: 'cp', cp: 25 },
+      { kind: 'cp', cp: -10 },
+    ]);
+    const makeEngine = vi.fn(() => scriptedEngine());
+
+    render(<GameViewer pgn={PGN} variant="lite-single" makeEngine={makeEngine} />);
+
+    expect(await screen.findByRole('meter')).toHaveAttribute('aria-valuetext', '+0,2');
+    expect(screen.queryByRole('button', { name: 'Analizar' })).toBeNull();
+    expect(makeEngine).not.toHaveBeenCalled();
+  });
+
+  it('saves a finished analysis, so reopening the game needs no engine', async () => {
+    render(<GameViewer pgn={PGN} variant="lite-single" makeEngine={() => scriptedEngine()} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Analizar' }));
+    await waitFor(async () => expect(await readAnalysis(fens, cacheSettings())).toHaveLength(4));
+  });
+
+  it('does not save an analysis that was left half way', async () => {
+    const { unmount } = render(
+      <GameViewer pgn={PGN} variant="lite-single" makeEngine={() => scriptedEngine({ latency: 50 })} />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Analizar' }));
+    unmount();
+    await new Promise((r) => setTimeout(r, 300));
+    expect(await readAnalysis(fens, cacheSettings())).toBeUndefined();
+  });
 });
 
 describe('sounds', () => {

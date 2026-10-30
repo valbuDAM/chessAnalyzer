@@ -1,6 +1,6 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: cierre de M4 (checklist común: `ponytail-audit`, `ponytail-debt`, `npm run mutate`, e2e Firefox/WebKit, `/usage`). Después, T5.1 (sonnet · high · advisor sí)
+▶ Siguiente tarea: T5.1 (sonnet · high · advisor sí: `/effort high` y `/advisor opus`)
 
 ## Notas de traspaso (tarea en curso)
 
@@ -12,6 +12,11 @@
   - `src/domain/engine/fullWasm.ts`: `FULL_WASM` (URL de unpkg, SHA-256 y 99 076 105 bytes), `downloadWasm(spec, {fetch, caches, storage}, {signal, onProgress})`, `cachedWasm(spec, caches)` (nunca toca la red) y `removeWasm(caches)`. Errores: `WasmDownloadError.kind` ∈ `quota | network | size | hash | aborted`; cualquier fallo deja la caché vacía, copia anterior incluida.
   - `variant.ts`: `'full-multi'` y `canOfferFull({variant, coarse, deviceMemory})`. `settings.ts`: `full-multi` usa los mismos ajustes que `lite-multi`. `es.json`: `game.variant.full-multi`.
   - `createEngine.ts`: `createFullEngine(blob)` (Worker con el `blob:` en el `#hash`, revocado en `uciok`, error o `terminate`). `stockfish-19.js` vendorizado y fijado en `FILES`.
+- **Cierre de M4:**
+  - `mutate`: **86,69 %** en `src/domain/` (mínimo 80 %). Los más flojos: `chesscom.ts` 78,68 %, `fullWasm.ts` 80,23 %, `engine.ts` 80 %, `analysisCache.ts` 83,33 %, `FakeEngine.ts` 83,87 %.
+  - `ponytail-debt`: 9 marcadores `shortcut:`, todos con límite y trigger.
+  - `ponytail-audit` (aceptados en notas, sin tarea, a decisión de la usuaria; el 1, 4 y 6 son los más baratos de arreglar): (1) `UserPage.tsx:52` sigue descargando meses al salir de la página y ocupa la cola; `?months=999` carga todo el historial. (2) `findGame` (`chesscom.ts:230`) baja meses completos sin cancelar. (3) un solo timeout de 15 s cubre petición y cuerpo (`chesscom.ts:55`): un mes enorme en una conexión lenta podría fallar siempre; sin medir. (4) si `new Worker` lanza síncrono con el motor full no hay retorno a lite y el `blob:` no se revoca (hoy no hay CSP, así que es teórico). (5) `cachedWasm` no revalida el hash (decisión de ADR-029); una copia corrupta daría un retorno a lite permanente. (6) `moveCount` se recalcula en cada render de cada `GameCard`. (7) código sin uso: `movetime` (solo en tests), `Game.rated`, `Position.uci` (comprobar antes de borrar). Sin cubrir por tests: cancelación de `UserPage`, `Worker` que lanza síncrono, coste de `findGame`.
+  - **Pendiente de la usuaria:** e2e Firefox/WebKit (job manual) y `/usage`.
 - **Tarea anterior:** T4.5b cerrada (PR #71, ya mergeado y probado a mano en la preview). Con ella queda hecho M4.
 - **Entregado en T4.5b:**
   - `src/engine/deep.ts`: `detectDeep()` devuelve las dependencias del modo profundo (`cached`/`download`/`remove`) o `undefined` si no se ofrece (`canOfferFull`, `caches` ausente o que lanza). `GameViewer` las recibe por la prop `deep` y `makeFullEngine`.

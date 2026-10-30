@@ -253,4 +253,4 @@ Formato breve: **Contexto · Decisión · Descartado · Consecuencias**. Todas s
   - `FakeEngine` admite `latency` y su `stop()` aborta lo pendiente, como el motor real.
   - CI: `node scripts/vendor-engine.mjs --check` verifica los SHA-256 de `public/engine/` sin red.
 - **Descartado:** botón «Detener» (sin UX nueva en esta tarea), `Eval.second` ahora, reutilizar un motor entre partidas, `userAgentData.mobile`.
-- **Comprobado con el motor real:** `Threads` (máx. 32 multihilo, 1 un hilo), `Hash` y `MultiPV` se aceptan en los builds lite; la línea 2 llega tras la 1.
+- **Comprobado con el motor real:** `Threads` (máx. 32 multihilo, 1 un hilo), `Hash` y `MultiPV` se aceptan en los builds lite y en `asm` (`asm` fuera del navegador, con Node); la línea 2 llega tras la 1.

@@ -1,12 +1,12 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T4.2
+▶ Siguiente tarea: T4.3
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T4.2 en el PR de `feat/t4-2-queue`, pendiente de CI y revisión. Detalle en ADR-028.
+- **Tarea anterior:** T4.2 cerrada (PR #62, ya mergeado). Detalle en ADR-028.
 - **Entregado en T4.2:**
   - `src/domain/engine/settings.ts`: `analysisSettings` + `uciOptions` (ADR-009). `createEngine.ts`: `detectSettings()`; `createEngine` pasa las opciones a `UciEngine({ options })`.
   - `parseInfo` lee `multipv`; `UciEngine` solo guarda la línea 1. Test del `stop()` entre `ucinewgame` y `go` (pendiente de M2).
@@ -465,7 +465,7 @@
 **Tests:** U de la selección (capacidades inyectadas) · E forzando cada rama.
 **Depende de:** T1.5 · **Modelo:** sonnet · high · advisor sí · **Skills:** tdd
 
-### T4.2 · Cola de análisis — `en curso`
+### T4.2 · Cola de análisis — `hecha` (PR #62)
 **Objetivo:** Un análisis completo, configurable, cancelable y progresivo.
 **RF:**
 - MultiPV 2.

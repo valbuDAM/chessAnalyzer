@@ -1,12 +1,19 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T4.5a (sonnet · high · advisor sí: `/effort high` y `/advisor opus`)
+▶ Siguiente tarea: T4.5b (sonnet · high · advisor sí; sin cambios de `/effort` ni `/advisor`)
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
 - **T4.5 dividida en T4.5a y T4.5b tras el grilling:** todo el diseño, lo descartado y las mediciones están en ADR-029. El script de la prueba técnica no se ha guardado; sus resultados sí, en el ADR.
+- **Tarea anterior:** T4.5a cerrada (PR #69, ya mergeado).
+- **Entregado en T4.5a (sin UI):**
+  - `src/domain/engine/fullWasm.ts`: `FULL_WASM` (URL de unpkg, SHA-256 y 99 076 105 bytes), `downloadWasm(spec, {fetch, caches, storage}, {signal, onProgress})`, `cachedWasm(spec, caches)` (nunca toca la red) y `removeWasm(caches)`. Errores: `WasmDownloadError.kind` ∈ `quota | network | size | hash | aborted`; cualquier fallo deja la caché vacía, copia anterior incluida.
+  - `variant.ts`: `'full-multi'` y `canOfferFull({variant, coarse, deviceMemory})`. `settings.ts`: `full-multi` usa los mismos ajustes que `lite-multi`. `es.json`: `game.variant.full-multi`.
+  - `createEngine.ts`: `createFullEngine(blob)` (Worker con el `blob:` en el `#hash`, revocado en `uciok`, error o `terminate`). `stockfish-19.js` vendorizado y fijado en `FILES`.
+- **Para T4.5b:** `createEngine`/`detectVariant` siguen síncronos; el modo profundo se decide en la UI con `cachedWasm` + `createFullEngine`. Hay que tratar `caches` ausente o que lanza (contexto inseguro, modo privado) como «no disponible» y quedarse en lite. `createFullEngine` no tiene test unitario (necesita un Worker real): lo cubre la prueba manual.
+- **Límites de T4.5a:** `uciok` real con el `blob:` sin comprobar en un navegador (solo lo midió ADR-029 en Chromium); Firefox, WebKit y equipos modestos sin medir.
 - **Tarea anterior:** T4.4 cerrada (PR #66, ya mergeado).
 - **Entregado en T4.4:**
   - `MoveList`: cada jugada es un `Move` memoizado (una puntuación nueva repinta solo su jugada); el scroll a la jugada actual se difiere un frame (`scrollSoon`) porque leer `offsetTop` en el handler de teclado forzaba un layout de la lista entera (20–115 ms por paso con 300 jugadas).
@@ -513,7 +520,7 @@
 **Tests:** E con medición de long tasks · U del agrupado.
 **Depende de:** T4.2 · **Modelo:** sonnet · medium · advisor no · **Skills:** diagnosing-bugs (si hay regresión)
 
-### T4.5a · Motor full: descarga, caché y carga — `pendiente`
+### T4.5a · Motor full: descarga, caché y carga — `hecha`
 **Objetivo:** Ofrecer la red NNUE grande sin alojar 99 MB (ADR-029, sin UI todavía).
 **RF:**
 - Variante `full-multi` y `bin/stockfish-19.js` vendorizado; SHA-256 y tamaño del wasm fijados en `src/`.

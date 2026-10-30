@@ -1,12 +1,14 @@
 // Vendors Stockfish (GPL-3.0) into public/engine/ (ADR-022). Run: npm run vendor:engine
+// `--check` only verifies the files already there against the pinned hashes (CI, no network).
 // To upgrade: change VERSION, empty the hashes, run twice and compare downloads, then pin the new ones (trust on first use).
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const VERSION = '19.0.1';
 const BASE = `https://unpkg.com/stockfish@${VERSION}`;
-const OUT = new URL('../public/engine/', import.meta.url);
+const OUT = join(import.meta.dirname, '..', 'public', 'engine');
 
 // [path inside the npm package, file name in public/engine/, sha256]
 export const FILES = [
@@ -42,10 +44,20 @@ export const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex'
 
 export const matches = (bytes, expected) => sha256(bytes) === expected;
 
+/** Files in `dir` that are missing or do not match their pinned SHA-256. */
+export async function unverified(dir = OUT) {
+  const bad = [];
+  for (const [, name, hash] of FILES) {
+    const bytes = await readFile(join(dir, name)).catch(() => null);
+    if (!bytes || !matches(bytes, hash)) bad.push(name);
+  }
+  return bad;
+}
+
 async function vendor() {
   await mkdir(OUT, { recursive: true });
   for (const [from, name, hash] of FILES) {
-    const target = new URL(name, OUT);
+    const target = join(OUT, name);
     const current = await readFile(target).catch(() => null);
     if (current && matches(current, hash)) continue;
     const res = await fetch(`${BASE}/${from}`);
@@ -60,7 +72,7 @@ async function vendor() {
   }
   // GPL-3.0 §6: tell where the corresponding source is.
   await writeFile(
-    new URL('SOURCE.txt', OUT),
+    join(OUT, 'SOURCE.txt'),
     `Stockfish ${VERSION} (WASM build by nmrugg/stockfish.js), GPL-3.0, see COPYING.txt.\n` +
       `Source: https://github.com/nmrugg/stockfish.js/releases/tag/v${VERSION}\n` +
       `Package: ${BASE}/\n` +
@@ -68,4 +80,12 @@ async function vendor() {
   );
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) await vendor();
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  if (process.argv.includes('--check')) {
+    const bad = await unverified();
+    if (bad.length) {
+      console.error(`Not the pinned SHA-256: ${bad.join(', ')}. Run: npm run vendor:engine`);
+      process.exitCode = 1;
+    } else console.log('Engine files match the pinned SHA-256.');
+  } else await vendor();
+}

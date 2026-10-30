@@ -241,3 +241,16 @@ Formato breve: **Contexto · Decisión · Descartado · Consecuencias**. Todas s
   - `Game.variant` guarda `rules` o la cabecera `Variant`. Clave de caché `games:v2:`.
   - `parseGamePgn` lanza `PgnError({ kind: 'variant', name })` y ya no trata el enroque 960. La tarjeta lleva la etiqueta y enlaza igualmente; la página de la partida solo explica, sin tablero ni botón de analizar. El PGN pegado se rechaza en el formulario.
 - **Descartado:** mostrar el tablero sin análisis (exige enroque 960), soporte real de Chess960 (el motor sigue con el `shortcut:` de reglas estándar), lista negra de variantes.
+
+### ADR-028 · Cola de análisis (T4.2)
+- **Fecha:** 2026-10-29.
+- **Decisión:**
+  - Un motor por análisis, creado al pulsar «Analizar» y liberado con `dispose()` al terminar, fallar o cancelar. El identificador por análisis de ADR-009 es su `AbortController`: `analyseGame(engine, fens, { depth, signal, onProgress })` llama a `engine.stop()` al abortar, rechaza con `AbortError` y comprueba la señal tras cada `await`, así que un resultado que llega en el mismo instante tampoco se muestra.
+  - `onProgress` recibe una copia de las puntuaciones hasta ahora (siempre un prefijo de la partida): el visor deja recorrer lo analizado mientras sigue el resto. `ANALYSIS_DEPTH` desaparece; la profundidad viene de los ajustes.
+  - `analysisSettings({ variant, cores, mobile })` en `src/domain/engine/settings.ts` (puro): profundidad 16 solo con `lite-multi` fuera de móvil y 12 en el resto; hilos `max(1, min(cores − 1, 4))` solo en `lite-multi`; hash 64 MB (16 MB en móvil); MultiPV 2. «Móvil» = `(pointer: coarse)`, el criterio del CSS (un portátil táctil bajará a 12). `uciOptions` los traduce a `setoption`, que `UciEngine` envía entre `uciok` y el `isready` del arranque; `Threads` se omite con 1.
+  - MultiPV 2 obliga a que `UciEngine` solo guarde la línea `multipv 1` (`parseInfo` lee `multipv`, 1 si falta): el motor real manda la línea 2 después de la 1 y pisaría el resultado. `Eval` sigue sin segunda línea; se añadirá en la tarea de clasificación que la use.
+  - `GameViewer` se monta con `key={pgn}`: otra partida reinicia posición y análisis. «Analizando jugada N de M», con M = jugadas.
+  - `FakeEngine` admite `latency` y su `stop()` aborta lo pendiente, como el motor real.
+  - CI: `node scripts/vendor-engine.mjs --check` verifica los SHA-256 de `public/engine/` sin red.
+- **Descartado:** botón «Detener» (sin UX nueva en esta tarea), `Eval.second` ahora, reutilizar un motor entre partidas, `userAgentData.mobile`.
+- **Comprobado con el motor real:** `Threads` (máx. 32 multihilo, 1 un hilo), `Hash` y `MultiPV` se aceptan en los builds lite; la línea 2 llega tras la 1.

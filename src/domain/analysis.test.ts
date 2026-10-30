@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
-import { ANALYSIS_DEPTH, analyseGame, winPercent } from './analysis.ts';
-import { type Engine, EngineError, type Eval } from './engine/engine.ts';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { analyseGame, winPercent } from './analysis.ts';
+import { DEFAULT_DEPTH, type Engine, EngineError, type Eval } from './engine/engine.ts';
 import { FakeEngine } from './engine/FakeEngine.ts';
 
 const WHITE_TO_MOVE = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -60,23 +60,28 @@ describe('analyseGame', () => {
     expect(engine.calls).toEqual([]);
   });
 
-  it('reports progress after each position, finished ones included', async () => {
+  it('reports the scores so far after each position, as copies, finished positions included', async () => {
     const engine = new FakeEngine({ [WHITE_TO_MOVE]: ev({ kind: 'cp', cp: 0 }) });
     const onProgress = vi.fn();
     await analyseGame(engine, [WHITE_TO_MOVE, MATED_WHITE], { onProgress });
     expect(onProgress.mock.calls).toEqual([
-      [1, 2],
-      [2, 2],
+      [[{ kind: 'cp', cp: 0 }]],
+      [
+        [
+          { kind: 'cp', cp: 0 },
+          { kind: 'final', winner: 'black' },
+        ],
+      ],
     ]);
   });
 
-  it('analyses at the tracer depth unless told otherwise', async () => {
+  it('analyses at the engine default depth unless told otherwise', async () => {
     const analyse = vi.fn(async () => ev({ kind: 'cp', cp: 0 }));
     const engine: Engine = { analyse, stop: () => {}, dispose: () => {} };
     await analyseGame(engine, [WHITE_TO_MOVE]);
     await analyseGame(engine, [WHITE_TO_MOVE], { depth: 4 });
     expect(analyse.mock.calls).toEqual([
-      [WHITE_TO_MOVE, { depth: ANALYSIS_DEPTH }],
+      [WHITE_TO_MOVE, { depth: DEFAULT_DEPTH }],
       [WHITE_TO_MOVE, { depth: 4 }],
     ]);
   });
@@ -85,5 +90,59 @@ describe('analyseGame', () => {
     const engine = new FakeEngine({});
     await expect(analyseGame(engine, [WHITE_TO_MOVE, BLACK_TO_MOVE])).rejects.toBeInstanceOf(EngineError);
     expect(engine.calls).toEqual([WHITE_TO_MOVE]);
+  });
+
+  describe('with a signal', () => {
+    const FENS = [WHITE_TO_MOVE, BLACK_TO_MOVE, WHITE_TO_MOVE];
+    const evals = { [WHITE_TO_MOVE]: ev({ kind: 'cp', cp: 1 }), [BLACK_TO_MOVE]: ev({ kind: 'cp', cp: 2 }) };
+    afterEach(() => vi.useRealTimers());
+
+    it('stops the engine, rejects with an AbortError and reports nothing more once aborted mid-game', async () => {
+      vi.useFakeTimers();
+      const engine = new FakeEngine(evals, { latency: 100 });
+      const stop = vi.spyOn(engine, 'stop');
+      const ctrl = new AbortController();
+      const onProgress = vi.fn();
+      const run = expect(analyseGame(engine, FENS, { signal: ctrl.signal, onProgress })).rejects.toMatchObject({
+        name: 'AbortError',
+      });
+
+      await vi.advanceTimersByTimeAsync(100); // first position done, second in flight
+      expect(onProgress).toHaveBeenCalledTimes(1);
+      ctrl.abort();
+      await run;
+      await vi.advanceTimersByTimeAsync(1_000);
+
+      expect(stop).toHaveBeenCalledTimes(1);
+      expect(onProgress).toHaveBeenCalledTimes(1);
+      expect(engine.calls).toHaveLength(2); // the third position was never asked
+    });
+
+    it('drops a result that arrives in the same tick as the abort', async () => {
+      const engine = new FakeEngine(evals); // answers at once, whatever stop() says
+      const ctrl = new AbortController();
+      const onProgress = vi.fn();
+      const run = analyseGame(engine, FENS, { signal: ctrl.signal, onProgress });
+      ctrl.abort();
+      await expect(run).rejects.toMatchObject({ name: 'AbortError' });
+      expect(onProgress).not.toHaveBeenCalled();
+    });
+
+    it('does not touch the engine if it is aborted already', async () => {
+      const engine = new FakeEngine(evals);
+      await expect(analyseGame(engine, FENS, { signal: AbortSignal.abort() })).rejects.toMatchObject({
+        name: 'AbortError',
+      });
+      expect(engine.calls).toEqual([]);
+    });
+
+    it('does not stop the engine for an abort that comes after the game is done', async () => {
+      const engine = new FakeEngine(evals);
+      const stop = vi.spyOn(engine, 'stop');
+      const ctrl = new AbortController();
+      await analyseGame(engine, [WHITE_TO_MOVE], { signal: ctrl.signal });
+      ctrl.abort();
+      expect(stop).not.toHaveBeenCalled();
+    });
   });
 });

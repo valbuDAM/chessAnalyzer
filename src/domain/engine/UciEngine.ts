@@ -59,11 +59,16 @@ export class UciEngine implements Engine {
   #failure: EngineError | undefined;
   #ready = false;
   readonly #startTimeout: number;
+  readonly #options: Record<string, number>;
 
-  /** `startTimeout`: ms the engine has to answer the handshake before it counts as not loaded (T4.1). */
-  constructor(transport: Transport, { startTimeout = 10_000 } = {}) {
+  /**
+   * `startTimeout`: ms the engine has to answer the handshake before it counts as not loaded (T4.1).
+   * `options`: UCI options (`Threads`, `Hash`, `MultiPV`…) set once, before the first search (T4.2).
+   */
+  constructor(transport: Transport, { startTimeout = 10_000, options = {} } = {}) {
     this.#transport = transport;
     this.#startTimeout = startTimeout;
+    this.#options = options;
     transport.onLine((line) => this.#onLine(line));
     transport.onError((message) => this.#fail(new (this.#ready ? EngineError : EngineLoadError)(message)));
   }
@@ -132,6 +137,9 @@ export class UciEngine implements Engine {
     );
     try {
       await this.#ask('uci', (line) => line === 'uciok');
+      for (const [name, value] of Object.entries(this.#options)) {
+        this.#transport.send(`setoption name ${name} value ${value}`);
+      }
       await this.#ask('isready', (line) => line === 'readyok');
       this.#ready = true;
     } finally {
@@ -169,7 +177,8 @@ export class UciEngine implements Engine {
       const best = parseBestMove(line);
       const info = best ? undefined : parseInfo(line);
       if (best) job.best = best;
-      else if (info && !info.bound) job.last = info;
+      // With MultiPV > 1 the other lines would overwrite the best one.
+      else if (info && !info.bound && info.multipv === 1) job.last = info;
     }
     for (const waiter of this.#waiters) {
       if (!waiter.test(line)) continue;

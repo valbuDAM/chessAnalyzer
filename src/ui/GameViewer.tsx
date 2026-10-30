@@ -4,7 +4,7 @@ import { analyseGame, type WhiteScore, winPercent } from '../domain/analysis.ts'
 import { type Engine, EngineLoadError } from '../domain/engine/engine.ts';
 import type { Variant } from '../domain/engine/variant.ts';
 import { parseGamePgn } from '../domain/pgn.ts';
-import { createEngine, detectVariant } from '../engine/createEngine.ts';
+import { createEngine, detectSettings, detectVariant } from '../engine/createEngine.ts';
 import { formatEval } from '../i18n/format.ts';
 import { Board } from './Board.tsx';
 import { EvalBar } from './EvalBar.tsx';
@@ -14,23 +14,24 @@ import './GameViewer.css';
 
 type Analysis =
   | { status: 'idle' }
-  | { status: 'running'; done: number; total: number }
+  // `scores` is the part of the game analysed so far, always from the first position on.
+  | { status: 'running'; scores: WhiteScore[] }
   | { status: 'done'; scores: WhiteScore[] }
   | { status: 'error'; engineLoad: boolean };
 
-export function GameViewer({
-  pgn,
-  orientation = 'white',
-  makeEngine = createEngine,
-  variant = detectVariant(),
-}: {
+type Props = {
   pgn: string;
   /** The side shown at the bottom, for the board and the evaluation bar alike. */
   orientation?: 'white' | 'black';
   makeEngine?: () => Engine;
   /** The engine build `makeEngine` will load, shown in "About the analysis". */
   variant?: Variant;
-}) {
+};
+
+// Another game starts from scratch: its position, its analysis, and no answer of the previous one reaches it.
+export const GameViewer = (props: Props) => <Viewer key={props.pgn} {...props} />;
+
+function Viewer({ pgn, orientation = 'white', makeEngine = createEngine, variant = detectVariant() }: Props) {
   const { t } = useTranslation();
   const positions = useMemo(() => {
     try {
@@ -45,7 +46,7 @@ export function GameViewer({
   const [muted, setMuted] = useState(readMuted);
   // Read once: a rotation must not undo the reader's own fold.
   const [movesOpen] = useState(() => !window.matchMedia?.('(max-width: 40rem)').matches);
-  const engine = useRef<Engine>(null);
+  const analysisAbort = useRef<AbortController>(null);
   const lastPly = useRef(0);
   const last = (positions?.length ?? 1) - 1;
 
@@ -77,20 +78,15 @@ export function GameViewer({
     lastPly.current = ply;
   }, [ply, san, muted, last]);
 
-  // Leaving the page stops the search; `analyse` ignores whatever the dropped engine rejects with.
-  useEffect(
-    () => () => {
-      engine.current?.stop();
-      engine.current?.dispose();
-      engine.current = null;
-    },
-    [],
-  );
+  // Leaving the page aborts the analysis: the engine stops, is released by `analyse`, and nothing more is shown.
+  useEffect(() => () => analysisAbort.current?.abort(), []);
 
   if (!positions) return <p role="alert">{t('game.invalid')}</p>;
   const current = positions[ply];
-  const scores = analysis.status === 'done' ? analysis.scores : undefined;
+  const scores = analysis.status === 'running' || analysis.status === 'done' ? analysis.scores : undefined;
   const currentScore = scores?.[ply];
+  // The first position is the start, not a move: "move N of M" counts the moves analysed.
+  const moves = Math.max(0, (scores?.length ?? 0) - 1);
   const side = flipped ? (orientation === 'white' ? 'black' : 'white') : orientation;
   // Piece letters spoken in Spanish (Cf3, not Nf3); the only uppercase letters in SAN besides O-O are pieces.
   const spokenSan = current?.san?.replace(/[KQRBN]/g, (c) => t('game.pieceLetters').charAt('KQRBN'.indexOf(c)));
@@ -103,23 +99,26 @@ export function GameViewer({
     : t('game.start');
 
   const analyse = async () => {
+    const abort = new AbortController();
+    analysisAbort.current = abort;
     let own: Engine | undefined;
-    setAnalysis({ status: 'running', done: 0, total: positions.length });
+    setAnalysis({ status: 'running', scores: [] });
     try {
       own = makeEngine();
-      engine.current = own;
       const result = await analyseGame(
         own,
         positions.map((p) => p.fen),
-        { onProgress: (done, total) => setAnalysis({ status: 'running', done, total }) },
+        {
+          depth: detectSettings(variant).depth,
+          signal: abort.signal,
+          onProgress: (so) => setAnalysis({ status: 'running', scores: so }),
+        },
       );
       setAnalysis({ status: 'done', scores: result });
     } catch (error) {
-      if (!own || engine.current === own)
-        setAnalysis({ status: 'error', engineLoad: error instanceof EngineLoadError });
+      if (!abort.signal.aborted) setAnalysis({ status: 'error', engineLoad: error instanceof EngineLoadError });
     } finally {
       own?.dispose();
-      if (engine.current === own) engine.current = null;
     }
   };
 
@@ -167,8 +166,8 @@ export function GameViewer({
       {analysis.status === 'running' && (
         // A native <progress> is announced every few percent; a live region would read out every position.
         <div className="game-viewer-progress">
-          <progress max={analysis.total} value={analysis.done} aria-label={t('game.progressLabel')} />
-          <span aria-hidden="true">{t('game.analysing', { done: analysis.done, total: analysis.total })}</span>
+          <progress max={last} value={moves} aria-label={t('game.progressLabel')} />
+          <span aria-hidden="true">{t('game.analysing', { done: moves, total: last })}</span>
         </div>
       )}
       {analysis.status === 'error' && (

@@ -64,6 +64,34 @@ describe('UciEngine', () => {
     expect(t.sent.filter((c) => c === 'uci')).toHaveLength(1);
   });
 
+  it('takes the first line as the result when MultiPV sends more, whatever order they arrive in', async () => {
+    const t = scriptedTransport((c) =>
+      c.startsWith('go')
+        ? [
+            'info depth 10 multipv 1 score cp 18 pv e2e4 e7e5',
+            'info depth 10 multipv 2 score cp -40 pv d2d4 d7d5',
+            'info depth 11 multipv 2 score cp -35 lowerbound pv d2d4',
+            'bestmove e2e4 ponder e7e5',
+          ]
+        : defaultReply(c),
+    );
+    const result = await new UciEngine(t).analyse(START, { depth: 11 });
+    expect(result).toEqual({ score: { kind: 'cp', cp: 18 }, bestMove: 'e2e4', depth: 10, pv: ['e2e4', 'e7e5'] });
+  });
+
+  it('sends the options between `uciok` and the handshake `isready`', async () => {
+    const t = scriptedTransport();
+    await new UciEngine(t, { options: { Threads: 4, Hash: 64, MultiPV: 2 } }).analyse(START, { depth: 10 });
+    expect(t.sent.slice(0, 6)).toEqual([
+      'uci',
+      'setoption name Threads value 4',
+      'setoption name Hash value 64',
+      'setoption name MultiPV value 2',
+      'isready',
+      'ucinewgame',
+    ]);
+  });
+
   it('reports mate scores', async () => {
     const t = scriptedTransport((c) =>
       c.startsWith('go') ? ['info depth 3 score mate 1 pv a1a8', 'bestmove a1a8'] : defaultReply(c),
@@ -157,6 +185,23 @@ describe('UciEngine', () => {
     t.emit('readyok');
     await Promise.resolve();
     expect(goCount(t)).toBe(0);
+  });
+
+  it('stop between `ucinewgame` and `go` never sends position, go or stop', async () => {
+    let readies = 0;
+    const t = scriptedTransport((c) => {
+      if (c === 'isready') return ++readies === 1 ? ['readyok'] : []; // hold back the one after `ucinewgame`
+      return defaultReply(c);
+    });
+    const engine = new UciEngine(t);
+    const pending = expect(engine.analyse(START)).rejects.toMatchObject({ name: 'AbortError' });
+    await vi.waitFor(() => expect(t.sent).toContain('ucinewgame'));
+    engine.stop();
+    await pending;
+    t.emit('readyok');
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(t.sent.filter((c) => c === 'stop' || c.startsWith('go') || c.startsWith('position'))).toEqual([]);
   });
 
   it('stop with nothing running does nothing', () => {

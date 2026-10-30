@@ -91,7 +91,7 @@
     "prev": "Anterior",
     "next": "Siguiente",
     "analyse": "Analizar",
-    "analysing": "Analizando {{done}} de {{total}} posiciones…",
+    "analysing": "Analizando jugada {{done}} de {{total}}…",
     "progressLabel": "Progreso del análisis",
     "analysisError": "No se pudo analizar la partida. Puedes seguir recorriéndola.",
     "engineLoadError": "No se pudo cargar el motor. Puedes seguir recorriendo la partida.",

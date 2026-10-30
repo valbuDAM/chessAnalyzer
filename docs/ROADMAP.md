@@ -6,14 +6,21 @@
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
-- **Tarea:** T4.1 cerrada (PR #60, ya mergeado). Siguiente: T4.2.
+- **Tarea:** T4.2 en el PR de `feat/t4-2-queue`, pendiente de CI y revisión. Detalle en ADR-028.
+- **Entregado en T4.2:**
+  - `src/domain/engine/settings.ts`: `analysisSettings` + `uciOptions` (ADR-009). `createEngine.ts`: `detectSettings()`; `createEngine` pasa las opciones a `UciEngine({ options })`.
+  - `parseInfo` lee `multipv`; `UciEngine` solo guarda la línea 1. Test del `stop()` entre `ucinewgame` y `go` (pendiente de M2).
+  - `analyseGame` con `signal` y `onProgress(scores)`; `GameViewer` (envoltorio `key={pgn}`) muestra lo analizado mientras sigue. `FakeEngine` con `latency`.
+  - `engine-check` con botón «Detener» y e2e de cancelación con el motor real. CI: `vendor-engine.mjs --check`.
+- **Límites de T4.2:** sin botón de detener; `Eval` sin segunda línea de MultiPV; `ucinewgame` en cada posición vacía el hash (se podría conservar dentro de una partida); profundidad 16 con hilos sin medir en un equipo modesto; e2e Firefox/WebKit sin ejecutar.
+- **Tests intermitentes corregidos en T4.2:** el `requestAnimationFrame` de jsdom sella con un reloj que arranca con el entorno y chessground lo compara con `performance.now()`: cada animación duraba lo que tardó ese arranque (1,3 s; más de 10 s con la CPU cargada). `src/test-setup.ts` sella con `performance.now()`. `testTimeout` global de 15 s por el mismo motivo de CPU.
+- **Tarea anterior:** T4.1 cerrada (PR #60, ya mergeado).
 - **Entregado en T4.1:**
   - `src/domain/engine/variant.ts`: `selectVariant({ wasm, threads })` → `lite-multi` | `lite-single` | `asm`, y `VARIANT_FILES`. `detectVariant()` (en `createEngine.ts`) lee `crossOriginIsolated`, `SharedArrayBuffer` y `WebAssembly`; `createEngine(variant?)` carga el Worker de esa variante.
   - `UciEngine(transport, { startTimeout = 10_000 })`: el temporizador solo cubre el handshake. `EngineLoadError` (subclase de `EngineError`, mismo `name`) para timeout y para errores del Worker antes de `ready`; `GameViewer` lo distingue y muestra «No se pudo cargar el motor».
   - `GameViewer` recibe `variant` y pinta un `<details class="game-viewer-about">` «Acerca del análisis» con la variante.
   - e2e en `analysis.spec.ts`: una prueba por rama (qué script de Worker se pide) y un Worker mudo que acaba en el aviso a los 10 s. Para ocultar globales se usa `Object.defineProperty`: `delete window.X` no hace nada en el proyecto móvil (Pixel 7).
 - **Límites de T4.1:** si el multihilo no carga no se reintenta con el de un hilo (el roadmap solo pide aviso); `new Worker` que lanza síncrono sale como «No se pudo analizar» en vez de «No se pudo cargar el motor»; el multihilo corre con 1 hilo hasta T4.2; e2e Firefox/WebKit sin ejecutar.
-- **Pendiente para T4.2 (aceptados en el audit de M2, no entraron en T4.1):** paso de CI `node scripts/vendor-engine.mjs --check` antes del build, y test de `UciEngine` para `stop()` entre `ucinewgame`/`isready` y `go` (rama `if (job.settled) return` tras `readyok`).
 - **Pendiente de la usuaria (cierre de M3):** e2e Firefox/WebKit (job manual) y `/usage`. Cierre de M3: `mutate` 85,78 % en `src/domain/` (`chesscom.ts` 78,7 % y `UciEngine.ts` 81 % los más flojos); `ponytail-debt` sin marcadores sin trigger salvo `sound.ts:41` (aceptado).
 - **Tarea anterior:** T3.4 cerrada (PR #57, ya mergeado y probado en un móvil real).
 - **Entregado en T3.4:**
@@ -458,7 +465,7 @@
 **Tests:** U de la selección (capacidades inyectadas) · E forzando cada rama.
 **Depende de:** T1.5 · **Modelo:** sonnet · high · advisor sí · **Skills:** tdd
 
-### T4.2 · Cola de análisis — `pendiente`
+### T4.2 · Cola de análisis — `en curso`
 **Objetivo:** Un análisis completo, configurable, cancelable y progresivo.
 **RF:**
 - MultiPV 2.

@@ -520,7 +520,7 @@
 **Tests:** E con medición de long tasks · U del agrupado.
 **Depende de:** T4.2 · **Modelo:** sonnet · medium · advisor no · **Skills:** diagnosing-bugs (si hay regresión)
 
-### T4.5a · Motor full: descarga, caché y carga — `hecha`
+### T4.5a · Motor full: descarga, caché y carga — `hecha` (PR #69)
 **Objetivo:** Ofrecer la red NNUE grande sin alojar 99 MB (ADR-029, sin UI todavía).
 **RF:**
 - Variante `full-multi` y `bin/stockfish-19.js` vendorizado; SHA-256 y tamaño del wasm fijados en `src/`.

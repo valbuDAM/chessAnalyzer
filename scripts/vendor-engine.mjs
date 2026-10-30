@@ -32,6 +32,7 @@ export const FILES = [
     'stockfish-19-lite.wasm',
     'ddf06cdaf0b8e35c11b40530e44db96c2a99c9029c8d621dd9fca97e4872770c',
   ],
+  ['bin/stockfish-19.js', 'stockfish-19.js', '623ee70a10d6dc202375127b49e2e1822635f9ab07693ae7be28e50a787f6218'],
   [
     'bin/stockfish-19-asm.js',
     'stockfish-19-asm.js',

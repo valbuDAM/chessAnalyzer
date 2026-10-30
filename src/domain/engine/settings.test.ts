@@ -20,6 +20,11 @@ describe('analysisSettings (ADR-009)', () => {
       { variant: 'lite-multi', cores: 8, mobile: true },
       { depth: 12, threads: 4, hashMb: 16 },
     ],
+    // ADR-029: the deep mode runs with the same settings as lite-multi.
+    [
+      { variant: 'full-multi', cores: 8, mobile: false },
+      { depth: 16, threads: 4, hashMb: 64 },
+    ],
     [
       { variant: 'lite-single', cores: 8, mobile: false },
       { depth: 12, threads: 1, hashMb: 64 },

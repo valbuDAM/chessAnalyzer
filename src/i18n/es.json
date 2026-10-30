@@ -97,6 +97,7 @@
     "engineLoadError": "No se pudo cargar el motor. Puedes seguir recorriendo la partida.",
     "about": "Acerca del análisis",
     "variant": {
+      "full-multi": "Stockfish 19 completo, multihilo",
       "lite-multi": "Stockfish 19 lite, multihilo",
       "lite-single": "Stockfish 19 lite, un hilo",
       "asm": "Stockfish 19 asm.js, sin WebAssembly"

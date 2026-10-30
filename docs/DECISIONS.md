@@ -254,3 +254,19 @@ Formato breve: **Contexto · Decisión · Descartado · Consecuencias**. Todas s
   - CI: `node scripts/vendor-engine.mjs --check` verifica los SHA-256 de `public/engine/` sin red.
 - **Descartado:** botón «Detener» (sin UX nueva en esta tarea), `Eval.second` ahora, reutilizar un motor entre partidas, `userAgentData.mobile`.
 - **Comprobado con el motor real:** `Threads` (máx. 32 multihilo, 1 un hilo), `Hash` y `MultiPV` se aceptan en los builds lite y en `asm` (`asm` fuera del navegador, con Node); la línea 2 llega tras la 1.
+
+### ADR-029 · Modo «análisis profundo» (T4.5)
+- **Fecha:** 2026-10-30.
+- **Contexto:** concreta el modo profundo de ADR-008. unpkg sirve el wasm con gzip (99,1 MB descomprimidos, 79,2 MB en la red), sin `Content-Length` y sin atender `Range`. El `.js` lee la ruta del wasm de `self.location.hash` y ese `fetch` del Worker no pasa por la Cache API.
+- **Decisión:**
+  - Nueva variante `full-multi`, solo multihilo. Se ofrece si la variante detectada es `lite-multi`, no es `(pointer: coarse)` y `navigator.deviceMemory` es ≥ 4 o no existe: un cuelgue por memoria no lo cubre el retorno a lite.
+  - `bin/stockfish-19.js` se vendoriza en `FILES`. El wasm nunca entra en el repo ni en `vendor-engine.mjs`: su SHA-256 y su tamaño (99 076 105 bytes) van fijados en `src/`, con un test que los ata a `VERSION`.
+  - Descarga con botón explícito y cancelable, desactivado mientras se analiza; se cancela también al salir de la partida. `navigator.storage.estimate()` se comprueba antes si existe. Streaming sobre un `Uint8Array` del tamaño fijado (error si sobra o falta), SHA-256 con `crypto.subtle` y `cache.put` con `Content-Type: application/wasm`. Solo se verifica al descargar: a la caché solo llegan bytes verificados.
+  - Carga: `cache.match` → `blob()` → `createObjectURL` → `new Worker('…/stockfish-19.js#' + encodeURIComponent(blobUrl))`, y `revokeObjectURL` tras `uciok`.
+  - Activado significa que el wasm está en la Cache API, sin `localStorage`: si el navegador lo expulsa, se vuelve a lite. «Desactivar y borrar» libera los 99 MB. Antes de cada descarga se vacía la caché, y así una versión nueva sustituye a la anterior.
+  - Al cambiar de modo se conserva la jugada y se recarga el análisis de esa variante; si no existe, vuelve «Analizar». La clave de T4.3 ya incluye la variante.
+  - Fallos: descarga, hash o cuota dejan lite con aviso y se puede reintentar. Si la copia guardada no carga, esa partida se analiza con lite y aviso, se guarda como lite, la copia se conserva y el siguiente «Analizar» reintenta el profundo.
+  - Mismos ajustes que `lite-multi` (ADR-009): profundidad 16, hash 64 MB, hasta 4 hilos. `startTimeout` sigue en 10 s.
+- **Descartado:** el full de un hilo (otro hash, tamaño y `.js` para un caso casi inexistente con COOP/COEP en Pages); pasar la URL de unpkg al Worker (dependería de la caché HTTP, que puede expulsar 99 MB); `fetch` con `integrity` (sin comprobar que deje ver el progreso); rehacer el hash en cada carga; `navigator.storage.persist()` (Firefox pide permiso); un interruptor en `localStorage` (dos estados que sincronizar).
+- **Comprobado en Chromium sin ventana (12 núcleos, 16 GB):** el `blob:` carga con COEP y con hilos, también revocado antes de crearlos; hash correcto; `uciok` en 1,2–1,3 s; 0 peticiones a unpkg tras recargar. 80 posiciones a profundidad 16: 97 s con full frente a 70 s con lite. Memoria máxima de todo el navegador: 1044 MB frente a 548 MB.
+- **Consecuencias:** un equipo modesto puede pasar de los 10 s de arranque y acabar en lite con aviso. Firefox, WebKit y equipos modestos quedan sin medir. Tras subir de versión, la copia vieja ocupa espacio hasta la siguiente descarga.

@@ -1,11 +1,12 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T4.5 (sonnet · high · advisor sí: `/effort high` y `/advisor opus`)
+▶ Siguiente tarea: T4.5a (sonnet · high · advisor sí: `/effort high` y `/advisor opus`)
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
+- **T4.5 dividida en T4.5a y T4.5b tras el grilling:** todo el diseño, lo descartado y las mediciones están en ADR-029. El script de la prueba técnica no se ha guardado; sus resultados sí, en el ADR.
 - **Tarea anterior:** T4.4 cerrada (PR #66, ya mergeado).
 - **Entregado en T4.4:**
   - `MoveList`: cada jugada es un `Move` memoizado (una puntuación nueva repinta solo su jugada); el scroll a la jugada actual se difiere un frame (`scrollSoon`) porque leer `offsetTop` en el handler de teclado forzaba un layout de la lista entera (20–115 ms por paso con 300 jugadas).
@@ -512,21 +513,34 @@
 **Tests:** E con medición de long tasks · U del agrupado.
 **Depende de:** T4.2 · **Modelo:** sonnet · medium · advisor no · **Skills:** diagnosing-bugs (si hay regresión)
 
-### T4.5 · Modo «análisis profundo» (versión full desde unpkg) — `pendiente`
-**Objetivo:** Ofrecer la red NNUE grande sin alojar 99 MB.
+### T4.5a · Motor full: descarga, caché y carga — `pendiente`
+**Objetivo:** Ofrecer la red NNUE grande sin alojar 99 MB (ADR-029, sin UI todavía).
 **RF:**
-- Opción en escritorio con aviso del tamaño.
-- Descarga con barra de progreso (`fetch` en streaming).
-- Guardado en la Cache API: solo se descarga una vez.
-- `.js` alojado por nosotros y `locateFile` apuntando a unpkg con la versión fijada.
-- Comprobación de integridad (SHA-256 fijado).
-- Si falla, se vuelve a lite con aviso.
+- Variante `full-multi` y `bin/stockfish-19.js` vendorizado; SHA-256 y tamaño del wasm fijados en `src/`.
+- Descarga en streaming con progreso en bytes, cancelable, con comprobación previa de espacio.
+- Verificación del SHA-256 y guardado en la Cache API: solo se descarga una vez.
+- Carga con `blob:` en el `#hash` del Worker, revocado tras `uciok`.
+**Aceptación:**
+- Dado un `fetch` simulado, cuando la descarga termina con el hash correcto, entonces el wasm queda en caché y una segunda consulta no pide red.
+- Dado un hash incorrecto, un tamaño distinto, una cancelación o falta de cuota, cuando ocurre, entonces no queda nada en caché y el error se distingue.
+**Tests:** U del gestor de descarga y caché (fetch simulado) · U de `selectVariant`, `analysisSettings` y del test que ata la versión a `VERSION`.
+**Depende de:** T4.3 · **Riesgos:** unpkg sin garantías de servicio.
+**Modelo:** sonnet · high · advisor sí · **Skills:** tdd
+
+### T4.5b · Modo profundo: interfaz y retorno a lite — `pendiente`
+**Objetivo:** Activar, usar y desactivar el modo profundo desde «Acerca del análisis» (ADR-029).
+**RF:**
+- Opción en escritorio aislado con ≥ 4 GB si se conoce, con aviso del tamaño.
+- Progreso en MB, «Cancelar» y «Desactivar y borrar».
+- Al cambiar de modo se conserva la jugada y se recarga el análisis de esa variante.
+- Si falla, se vuelve a lite con aviso; un análisis hecho con lite se guarda como lite.
 **Aceptación:**
 - Dado el modo profundo activado por primera vez, cuando se descarga, entonces veo el progreso en MB y al recargar no se vuelve a descargar.
 - Dado unpkg caído, cuando lo activo, entonces veo el error y el análisis sigue con lite.
-**Tests:** U del gestor de descarga y caché (fetch simulado) · I manual documentado (99 MB no van a la CI).
-**Depende de:** T4.3 · **Riesgos:** unpkg sin garantías de servicio; memoria en equipos modestos; el Worker no puede cargarse desde otro origen.
-**Modelo:** sonnet · high · advisor sí
+**Tests:** C de los estados · E de unpkg caído con `page.route` · I manual (99 MB no van a la CI).
+**Prueba manual de T4.5:** en la preview de Cloudflare, abrir una partida, descargar, comprobar el progreso y recargar sin petición a unpkg; analizar y ver la variante en «Acerca del análisis»; «Desactivar y borrar» y comprobar que vuelve lite.
+**Depende de:** T4.5a · **Riesgos:** memoria en equipos modestos.
+**Modelo:** sonnet · high · advisor sí · **Skills:** frontend-design
 
 ---
 
@@ -697,4 +711,4 @@
 | Navegador sin hilos WASM / sin `SharedArrayBuffer` | T4.1 |
 | Partidas muy largas | T4.4 |
 | Cuota de IndexedDB llena | T2.2, T4.3 |
-| unpkg caído (modo profundo) | T4.5 |
+| unpkg caído (modo profundo) | T4.5b |

@@ -1,11 +1,17 @@
 ﻿# Roadmap — Zugzwang
 
-▶ Siguiente tarea: T4.3
+▶ Siguiente tarea: T4.4
 
 ## Notas de traspaso (tarea en curso)
 
 > Lo primero que se lee tras un `/clear`. Se reescribe al cerrar o pausar cada tarea.
 
+- **Tarea anterior:** T4.3 cerrada (PR #64, ya mergeado).
+- **Entregado en T4.3:**
+  - `src/domain/analysisCache.ts`: `readAnalysis` / `writeAnalysis` sobre `idb-keyval`. Clave `analysis:v1:<variante>:<profundidad>:<sha256 de los FEN>` (no del PGN: el análisis solo depende de las posiciones). Una entrada con otra longitud que la partida se ignora. Si IndexedDB o `crypto.subtle` fallan, se sigue sin caché.
+  - `GameViewer` lee la caché al montar (solo aplica el resultado si el estado sigue `idle`) y guarda al terminar un análisis completo; los cancelados no se guardan.
+  - Tests: unitarios de la caché, tres de componente y un e2e que analiza, recarga y comprueba que no se pide el motor. Sin dependencias nuevas (`fake-indexeddb` ya estaba por T2.2).
+- **Límites de T4.3:** los 300 ms de la aceptación no se midieron (el e2e solo comprueba que no se pide el motor); e2e Firefox/WebKit sin ejecutar; las entradas no se expulsan nunca (`shortcut:`); al cambiar la forma de `WhiteScore` hay que subir `v1` a mano; solo se valida la longitud de lo leído.
 - **Tarea anterior:** T4.2 cerrada (PR #62, ya mergeado). Detalle en ADR-028.
 - **Entregado en T4.2:**
   - `src/domain/engine/settings.ts`: `analysisSettings` + `uciOptions` (ADR-009). `createEngine.ts`: `detectSettings()`; `createEngine` pasa las opciones a `UciEngine({ options })`.
@@ -482,7 +488,7 @@
 **Depende de:** T4.1 · **Riesgos:** condiciones de carrera → test de orden de mensajes.
 **Modelo:** sonnet · high · advisor sí · **Skills:** tdd
 
-### T4.3 · Caché de análisis — `pendiente`
+### T4.3 · Caché de análisis — `hecha` (PR #64)
 **Objetivo:** Que reabrir una partida analizada sea instantáneo.
 **RF:**
 - Clave = URL o hash del PGN + variante + profundidad + versión de esquema.

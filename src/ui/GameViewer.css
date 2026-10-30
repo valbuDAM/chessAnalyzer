@@ -27,7 +27,8 @@
   gap: var(--space-2);
 }
 
-.game-viewer-controls button {
+.game-viewer-controls button,
+.game-viewer-deep button {
   flex: 1;
   padding: var(--space-3) var(--space-5);
   border: 0;
@@ -38,7 +39,8 @@
   font-weight: 700;
 }
 
-.game-viewer-controls button:disabled {
+.game-viewer-controls button:disabled,
+.game-viewer-deep button:disabled {
   opacity: 0.5;
 }
 
@@ -67,8 +69,21 @@
 }
 
 @media (max-width: 40rem), (pointer: coarse) {
-  .game-viewer-controls button {
+  .game-viewer-controls button,
+  .game-viewer-deep button {
     min-block-size: var(--target-touch);
     padding-inline: var(--space-3);
   }
+}
+
+.game-viewer-deep {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  margin-block-start: var(--space-2);
+}
+
+.game-viewer-deep progress {
+  inline-size: 100%;
+  accent-color: var(--color-accent);
 }

@@ -5,19 +5,23 @@ import { readAnalysis, writeAnalysis } from '../domain/analysisCache.ts';
 import { type Engine, EngineLoadError } from '../domain/engine/engine.ts';
 import type { Variant } from '../domain/engine/variant.ts';
 import { parseGamePgn } from '../domain/pgn.ts';
-import { createEngine, detectSettings, detectVariant } from '../engine/createEngine.ts';
+import { createEngine, createFullEngine, detectSettings, detectVariant } from '../engine/createEngine.ts';
+import { type DeepDeps, detectDeep } from '../engine/deep.ts';
 import { formatEval } from '../i18n/format.ts';
 import { Board } from './Board.tsx';
+import { DeepMode } from './DeepMode.tsx';
 import { EvalBar } from './EvalBar.tsx';
 import { MoveList, scrollToView } from './MoveList.tsx';
 import { playSound, readMuted, soundKind, storeMuted } from './sound.ts';
+import { useDeepMode } from './useDeepMode.ts';
 import './GameViewer.css';
 
 type Analysis =
   | { status: 'idle' }
   // `scores` is the part of the game analysed so far, always from the first position on.
-  | { status: 'running'; scores: WhiteScore[] }
-  | { status: 'done'; scores: WhiteScore[] }
+  | { status: 'running'; scores: WhiteScore[]; variant: Variant }
+  // `variant` is the engine that produced the scores: the deep mode can fall back to lite (ADR-029).
+  | { status: 'done'; scores: WhiteScore[]; variant: Variant; fellBack?: boolean }
   | { status: 'error'; engineLoad: boolean };
 
 type Props = {
@@ -27,13 +31,27 @@ type Props = {
   makeEngine?: () => Engine;
   /** The engine build `makeEngine` will load, shown in "About the analysis". */
   variant?: Variant;
+  /** The deep mode of this browser (ADR-029); `undefined` where it is not offered. */
+  deep?: DeepDeps | undefined;
+  makeFullEngine?: (wasm: Blob) => Engine;
 };
 
 // Another game starts from scratch: its position, its analysis, and no answer of the previous one reaches it.
 export const GameViewer = (props: Props) => <Viewer key={props.pgn} {...props} />;
 
-function Viewer({ pgn, orientation = 'white', makeEngine = createEngine, variant = detectVariant() }: Props) {
+function Viewer({
+  pgn,
+  orientation = 'white',
+  makeEngine = createEngine,
+  variant = detectVariant(),
+  deep,
+  makeFullEngine = createFullEngine,
+}: Props) {
   const { t } = useTranslation();
+  const [deepDeps] = useState(() => deep ?? detectDeep());
+  const deepMode = useDeepMode(deepDeps);
+  // The variant shown and read from the cache: the deep mode replaces the detected one while it is on.
+  const active: Variant = deepMode.state.status === 'on' ? 'full-multi' : variant;
   const positions = useMemo(() => {
     try {
       return parseGamePgn(pgn);
@@ -51,19 +69,25 @@ function Viewer({ pgn, orientation = 'white', makeEngine = createEngine, variant
   const lastPly = useRef(0);
   const last = (positions?.length ?? 1) - 1;
   const fens = useMemo(() => positions?.map((p) => p.fen) ?? [], [positions]);
-  const depth = detectSettings(variant).depth;
+  const depth = detectSettings(active).depth;
 
-  // A game analysed before opens already done; if the reader pressed "Analyse" first, the cache does not interfere.
+  // A game analysed before opens already done, and changing the mode shows the analysis of that mode (or "Analyse").
+  // Whatever is running is left alone: its result arrives on its own.
   useEffect(() => {
     let stale = false;
     if (positions)
-      void readAnalysis(fens, { variant, depth }).then((saved) => {
-        if (saved && !stale) setAnalysis((a) => (a.status === 'idle' ? { status: 'done', scores: saved } : a));
+      void readAnalysis(fens, { variant: active, depth }).then((saved) => {
+        if (stale) return;
+        setAnalysis((a) => {
+          if (a.status === 'running') return a;
+          if (saved) return { status: 'done', scores: saved, variant: active };
+          return a.status === 'idle' ? a : { status: 'idle' };
+        });
       });
     return () => {
       stale = true;
     };
-  }, [positions, fens, variant, depth]);
+  }, [positions, fens, active, depth]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -116,21 +140,36 @@ function Viewer({ pgn, orientation = 'white', makeEngine = createEngine, variant
   const analyse = async () => {
     const abort = new AbortController();
     analysisAbort.current = abort;
-    let own: Engine | undefined;
-    setAnalysis({ status: 'running', scores: [] });
+    setAnalysis({ status: 'running', scores: [], variant: active });
+    const run = async (engine: Engine, used: Variant, fellBack: boolean) => {
+      try {
+        const result = await analyseGame(engine, fens, {
+          depth,
+          signal: abort.signal,
+          onProgress: (so) => setAnalysis({ status: 'running', scores: so, variant: used }),
+        });
+        setAnalysis({ status: 'done', scores: result, variant: used, ...(fellBack && { fellBack }) });
+        void writeAnalysis(fens, { variant: used, depth }, result);
+      } finally {
+        engine.dispose();
+      }
+    };
     try {
-      own = makeEngine();
-      const result = await analyseGame(own, fens, {
-        depth,
-        signal: abort.signal,
-        onProgress: (so) => setAnalysis({ status: 'running', scores: so }),
-      });
-      setAnalysis({ status: 'done', scores: result });
-      void writeAnalysis(fens, { variant, depth }, result);
+      // ADR-029: if the copy is gone or does not load, this game goes with lite and the copy is kept for the next try.
+      const wasm = active === 'full-multi' ? await deepDeps?.cached().catch(() => undefined) : undefined;
+      let fellBack = active === 'full-multi' && !wasm;
+      if (fellBack) void deepMode.refresh(); // the browser evicted it: offer the download again
+      if (wasm) {
+        try {
+          return await run(makeFullEngine(wasm), 'full-multi', false);
+        } catch (error) {
+          if (!(error instanceof EngineLoadError) || abort.signal.aborted) throw error;
+          fellBack = true;
+        }
+      }
+      await run(makeEngine(), variant, fellBack);
     } catch (error) {
       if (!abort.signal.aborted) setAnalysis({ status: 'error', engineLoad: error instanceof EngineLoadError });
-    } finally {
-      own?.dispose();
     }
   };
 
@@ -170,7 +209,11 @@ function Viewer({ pgn, orientation = 'white', makeEngine = createEngine, variant
       </div>
       {analysis.status !== 'done' && (
         <div className="game-viewer-controls">
-          <button type="button" disabled={analysis.status === 'running'} onClick={analyse}>
+          <button
+            type="button"
+            disabled={analysis.status === 'running' || deepMode.state.status === 'downloading'}
+            onClick={analyse}
+          >
             {t('game.analyse')}
           </button>
         </div>
@@ -185,9 +228,13 @@ function Viewer({ pgn, orientation = 'white', makeEngine = createEngine, variant
       {analysis.status === 'error' && (
         <p role="alert">{t(analysis.engineLoad ? 'game.engineLoadError' : 'game.analysisError')}</p>
       )}
+      {analysis.status === 'done' && analysis.fellBack && <p role="alert">{t('game.fellBack')}</p>}
       <details className="game-viewer-about">
         <summary>{t('game.about')}</summary>
-        <p>{t(`game.variant.${variant}`)}</p>
+        <p>
+          {t(`game.variant.${analysis.status === 'running' || analysis.status === 'done' ? analysis.variant : active}`)}
+        </p>
+        <DeepMode mode={deepMode} busy={analysis.status === 'running'} />
       </details>
       <details
         className="game-viewer-moves"

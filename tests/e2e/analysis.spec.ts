@@ -221,3 +221,17 @@ test('walking a 300-ply game while it is analysed leaves no long tasks on the ma
   const longTasks = await page.evaluate(() => (window as unknown as { longTasks: number[] }).longTasks);
   expect(longTasks.filter((d) => d > 100)).toEqual([]);
 });
+
+test('with unpkg down, the deep mode says so and the analysis goes on with lite', async ({ page }, info) => {
+  test.skip(info.project.name === 'mobile', 'the deep mode is not offered on touch devices');
+  await page.route('https://unpkg.com/**', (r) => r.abort());
+  await openGame(page);
+
+  await page.getByText('Acerca del análisis').click();
+  await page.getByRole('button', { name: 'Descargar y activar' }).click();
+  await expect(page.getByRole('alert')).toContainText('No se pudo descargar');
+
+  await page.getByRole('button', { name: 'Analizar' }).click();
+  await expect(page.getByRole('button', { name: 'Analizar' })).toHaveCount(0, { timeout: 60_000 });
+  await expect(page.getByText('Stockfish 19 lite, multihilo')).toBeVisible();
+});
